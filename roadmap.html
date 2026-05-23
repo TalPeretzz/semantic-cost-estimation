@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LLM Cost Estimation — Technical Roadmap</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg-card:#1a1d27;--bg-card-alt:#1f2333;--border:#2a2d3e;
+  --text:#e2e4ed;--text-muted:#7c80a0;--text-dim:#4a4e6a;
+  --accent:#6c8ef5;--accent-soft:#1e2847;
+  --green:#4ade80;--green-soft:#0f2a1a;
+  --red:#f87171;--red-soft:#2a0f0f;
+  --yellow:#fbbf24;--yellow-soft:#2a1f0a;
+  --purple:#c084fc;--purple-soft:#1e0f2a;
+  --cyan:#22d3ee;--cyan-soft:#0a1e2a;
+  --orange:#fb923c;--orange-soft:#2a150a;
+  --radius:12px;--radius-sm:8px;--shadow:0 4px 24px rgba(0,0,0,.4)
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+code,pre,kbd{font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px}
+
+/* LAYOUT */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+.section{margin-bottom:72px}
+.section-title{font-size:22px;font-weight:700;border-left:3px solid var(--accent);padding-left:16px;margin-bottom:32px}
+.section-title span{color:var(--accent)}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#0f1117 0%,#141830 100%);border-bottom:1px solid var(--border);padding:56px 24px;text-align:center;position:relative;overflow:hidden}
+header::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(108,142,245,.12) 0%,transparent 70%);pointer-events:none}
+.hbadge{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;border-radius:100px;border:1px solid rgba(108,142,245,.3);margin-bottom:20px}
+header h1{font-size:clamp(28px,5vw,48px);font-weight:700;color:#fff;margin-bottom:12px;line-height:1.2}
+header p{color:var(--text-muted);font-size:17px;max-width:640px;margin:0 auto 28px}
+.hmeta{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.hmeta-item{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:13px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+
+/* NAV */
+nav{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+nav ul{display:flex;list-style:none;max-width:1200px;margin:0 auto;padding:0 24px;overflow-x:auto;gap:0}
+nav li a{display:block;padding:14px 16px;color:var(--text-muted);text-decoration:none;font-size:13px;font-weight:500;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s}
+nav li a:hover{color:var(--text);border-bottom-color:var(--accent)}
+
+/* CARDS */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.mb-4{margin-bottom:16px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+
+/* PROGRESS OVERVIEW */
+.prog-overview{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:40px}
+.prog-card{background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;flex:1;min-width:140px;text-align:center}
+.prog-num{font-size:36px;font-weight:700;color:var(--accent)}
+.prog-label{font-size:13px;color:var(--text-muted);margin-top:4px}
+
+/* PIPELINE */
+.pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:8px 0}
+.pipe-step{flex:0 0 auto;background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 12px;min-width:120px;max-width:140px;text-align:center}
+.pipe-num{width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;border:1px solid rgba(108,142,245,.4);background:var(--accent-soft);color:var(--accent)}
+.pipe-label{font-size:11px;font-weight:600;color:var(--text);line-height:1.4}
+.pipe-detail{font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.3}
+.pipe-arrow{display:flex;align-items:center;padding:0 5px;color:var(--text-dim);font-size:18px;flex-shrink:0}
+
+.s-load{border-color:rgba(108,142,245,.4)}.s-load .pipe-num{background:var(--accent-soft);color:var(--accent)}
+.s-repr{border-color:rgba(192,132,252,.4)}.s-repr .pipe-num{background:var(--purple-soft);color:var(--purple)}
+.s-norm{border-color:rgba(34,211,238,.4)}.s-norm .pipe-num{background:var(--cyan-soft);color:var(--cyan)}
+.s-coc{border-color:rgba(251,191,36,.4)}.s-coc .pipe-num{background:var(--yellow-soft);color:var(--yellow)}
+.s-llm{border-color:rgba(74,222,128,.4)}.s-llm .pipe-num{background:var(--green-soft);color:var(--green)}
+.s-sig{border-color:rgba(251,146,60,.4)}.s-sig .pipe-num{background:var(--orange-soft);color:var(--orange)}
+.s-map{border-color:rgba(248,113,113,.4)}.s-map .pipe-num{background:var(--red-soft);color:var(--red)}
+.s-fac{border-color:rgba(192,132,252,.4)}.s-fac .pipe-num{background:var(--purple-soft);color:var(--purple)}
+.s-fin{border-color:rgba(74,222,128,.4)}.s-fin .pipe-num{background:var(--green-soft);color:var(--green)}
+.s-ev{border-color:rgba(108,142,245,.4)}.s-ev .pipe-num{background:var(--accent-soft);color:var(--accent)}
+
+/* FORMULA BOX */
+.formula-box{background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);overflow-x:auto;margin-bottom:16px;line-height:1.9}
+.formula-box .c{color:var(--text-dim)}
+.formula-box .k{color:var(--purple)}
+
+/* MODULES */
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.mod-card{background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.m-users::before{background:var(--accent)}
+.m-projects::before{background:var(--purple)}
+.m-estimation::before{background:var(--yellow)}
+.m-llm::before{background:var(--green)}
+.m-signals::before{background:var(--orange)}
+.m-adjustment::before{background:var(--red)}
+.m-evaluation::before{background:var(--cyan)}
+.m-dataset::before{background:var(--text-muted)}
+.mod-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.mod-prefix{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:10px}
+.mod-desc{font-size:13px;color:var(--text-muted);margin-bottom:14px}
+.mod-tags{display:flex;flex-wrap:wrap;gap:5px}
+.mod-tag{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+
+/* PAGE MAP */
+.page-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.page-card{background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.page-route{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:10px}
+.page-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px}
+.page-desc{font-size:13px;color:var(--text-muted);margin-bottom:10px}
+.page-comps{font-size:12px;color:var(--text-dim)}
+.page-comps strong{color:var(--text-muted);display:block;margin-bottom:3px}
+
+/* API ENDPOINTS */
+.ep-group{margin-bottom:24px}
+.ep-group-title{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-left:4px}
+.ep-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;flex-wrap:wrap}
+.method{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;min-width:58px;text-align:center}
+.m-post{background:rgba(74,222,128,.15);color:var(--green);border:1px solid rgba(74,222,128,.3)}
+.m-get{background:rgba(108,142,245,.15);color:var(--accent);border:1px solid rgba(108,142,245,.3)}
+.m-patch{background:rgba(251,191,36,.15);color:var(--yellow);border:1px solid rgba(251,191,36,.3)}
+.m-delete{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.ep-path{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);flex:1;min-width:200px}
+.ep-desc{font-size:13px;color:var(--text-muted);flex:2;min-width:150px}
+
+/* SIGNALS TABLE */
+.sig-table{width:100%;border-collapse:collapse}
+.sig-table th{text-align:left;padding:10px 14px;background:var(--bg-card-alt);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.sig-table td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);vertical-align:top}
+.sig-table tr:last-child td{border-bottom:none}
+.sig-name{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text)}
+
+/* ORDINAL TABLE */
+.ord-table{width:100%;border-collapse:collapse;font-size:13px}
+.ord-table th{padding:8px 12px;background:var(--bg-card-alt);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);border:1px solid var(--border);font-weight:600}
+.ord-table td{padding:9px 12px;border:1px solid var(--border);text-align:center;font-family:'JetBrains Mono',monospace}
+.ovl{color:#60a5fa}.ol{color:#34d399}.om{color:var(--text-muted)}.oh{color:var(--yellow)}.ovh{color:var(--red)}
+
+/* MILESTONE TIMELINE */
+.timeline{position:relative}
+.timeline::before{content:'';position:absolute;left:22px;top:0;bottom:0;width:2px;background:var(--border)}
+.ms{display:flex;gap:22px;margin-bottom:28px;position:relative}
+.ms-dot{flex:0 0 46px;height:46px;border-radius:50%;background:var(--bg-card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--text-muted);z-index:1;flex-shrink:0;margin-top:2px}
+.ms-dot.plan{border-color:var(--border);color:var(--text-muted)}
+.ms-content{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ms-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ms-num{font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase}
+.ms-title{font-size:17px;font-weight:700;color:var(--text);margin:4px 0 6px}
+.ms-goal{font-size:13px;color:var(--text-muted)}
+.ms-body{padding:18px 22px}
+.ms-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:680px){.ms-grid{grid-template-columns:1fr}}
+.ms-sec-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+.task-list{list-style:none}
+.task-list li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:13px;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.task-list li:last-child{border-bottom:none}
+.task-list li::before{content:'→';color:var(--text-dim);flex-shrink:0;margin-top:1px}
+.output-box{background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
+.risk-item{display:flex;gap:8px;padding:9px 12px;background:var(--red-soft);border:1px solid rgba(248,113,113,.2);border-radius:var(--radius-sm);font-size:13px;color:var(--red);margin-top:10px}
+.risk-item::before{content:'⚠';flex-shrink:0}
+.crit-list{list-style:none}
+.crit-list li{display:flex;gap:8px;padding:4px 0;font-size:13px;color:var(--text-muted)}
+.crit-list li::before{content:'✓';color:var(--green);flex-shrink:0}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge-planned{background:var(--accent-soft);color:var(--accent)}
+
+/* STACK TABLE */
+.stack-tbl{width:100%;border-collapse:collapse}
+.stack-tbl td{padding:9px 14px;border:1px solid var(--border);font-size:13px;color:var(--text-muted)}
+.stack-tbl tr:nth-child(even) td{background:var(--bg-card-alt)}
+.stack-tbl td:first-child{font-weight:600;color:var(--text);width:130px}
+.stack-tbl td:nth-child(2){font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);width:180px}
+
+/* LLM PROMPT BOX */
+.prompt-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:48px 0}
+
+/* PRINT */
+@media print{
+  nav{display:none}
+  header{padding:32px 24px}
+  header::before{display:none}
+  body{background:#fff;color:#111;font-size:12px}
+  .card,.mod-card,.page-card,.ms-content,.formula-box,.prompt-box,.output-box{background:#f9f9f9;border-color:#ddd;box-shadow:none;color:#333}
+  :root{--bg:#fff;--bg-card:#f9f9f9;--bg-card-alt:#f2f2f2;--border:#ddd;--text:#111;--text-muted:#444;--text-dim:#888;--accent:#3355cc;--green:#1a8a3a;--red:#cc2222;--yellow:#997700;--purple:#6633aa;--cyan:#006688;--orange:#994400}
+  .timeline::before{background:#ddd}
+  .ms-dot{border-color:#999;color:#555;background:#eee}
+  a{text-decoration:none;color:inherit}
+  .pipeline{flex-wrap:wrap}
+  .ms{page-break-inside:avoid}
+  .section{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbadge">Master's Final Project — Technical Roadmap</div>
+  <h1>LLM Framework for Software<br>Project Cost Estimation</h1>
+  <p>A hybrid COCOMO II + semantic signal extraction system. Claude AI extracts qualitative signals; the pipeline multiplies them into a calibrated effort estimate.</p>
+  <div class="hmeta">
+    <span class="hmeta-item"><span class="dot"></span> pnpm Monorepo</span>
+    <span class="hmeta-item"><span class="dot" style="background:var(--purple)"></span> NestJS + Next.js</span>
+    <span class="hmeta-item"><span class="dot" style="background:var(--green)"></span> TypeScript</span>
+    <span class="hmeta-item"><span class="dot" style="background:var(--yellow)"></span> PostgreSQL</span>
+    <span class="hmeta-item"><span class="dot" style="background:var(--cyan)"></span> Claude API</span>
+  </div>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#modules">Modules</a></li>
+    <li><a href="#pages">Pages</a></li>
+    <li><a href="#api">REST API</a></li>
+    <li><a href="#llm">LLM</a></li>
+    <li><a href="#signals">Signals</a></li>
+    <li><a href="#milestones">Milestones</a></li>
+  </ul>
+</nav>
+
+<div class="page" style="padding-top:48px">
+
+<!-- OVERVIEW STATS -->
+<div class="prog-overview">
+  <div class="prog-card"><div class="prog-num">7</div><div class="prog-label">Backend Modules</div></div>
+  <div class="prog-card"><div class="prog-num" style="color:var(--purple)">5</div><div class="prog-label">Frontend Pages</div></div>
+  <div class="prog-card"><div class="prog-num" style="color:var(--green)">5</div><div class="prog-label">LLM Signals</div></div>
+  <div class="prog-card"><div class="prog-num" style="color:var(--yellow)">7</div><div class="prog-label">Milestones</div></div>
+  <div class="prog-card"><div class="prog-num" style="color:var(--cyan)">3</div><div class="prog-label">Error Metrics</div></div>
+  <div class="prog-card"><div class="prog-num" style="color:var(--orange)">10</div><div class="prog-label">Pipeline Steps</div></div>
+</div>
+
+<!-- ======================================================== PIPELINE -->
+<section class="section" id="pipeline">
+<h2 class="section-title"><span>01 /</span> Estimation Pipeline</h2>
+
+<div class="card mb-4">
+<div class="pipeline">
+  <div class="pipe-step s-load"><div class="pipe-num">1</div><div class="pipe-label">Load / Create Project</div><div class="pipe-detail">Params + freetext or structured JSON</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-repr"><div class="pipe-num">2</div><div class="pipe-label">Represent Project</div><div class="pipe-detail">inputType → descriptionText or descriptionJson</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-norm"><div class="pipe-num">3</div><div class="pipe-label">Normalize Text</div><div class="pipe-detail">Merge inputs, clean, truncate</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-coc"><div class="pipe-num">4</div><div class="pipe-label">COCOMO II</div><div class="pipe-detail">Baseline E_nom</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-llm"><div class="pipe-num">5</div><div class="pipe-label">Claude API</div><div class="pipe-detail">Signals only</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-sig"><div class="pipe-num">6</div><div class="pipe-label">Extract 5 Signals</div><div class="pipe-detail">JSON validated</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-map"><div class="pipe-num">7</div><div class="pipe-label">Map to Ordinal</div><div class="pipe-detail">VL=-3 … VH=+3</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-fac"><div class="pipe-num">8</div><div class="pipe-label">A_i Factors</div><div class="pipe-detail">1+(ord×0.1)</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-fin"><div class="pipe-num">9</div><div class="pipe-label">E_final</div><div class="pipe-detail">E_nom × ∏ A_i</div></div>
+  <div class="pipe-arrow">›</div>
+  <div class="pipe-step s-ev"><div class="pipe-num">10</div><div class="pipe-label">Evaluate</div><div class="pipe-detail">MAE, RMSE, MAPE</div></div>
+</div>
+</div>
+
+<div class="formula-box">
+<div class="c">// COCOMO II Intermediate (Step 4)</div>
+<div>B = 0.91 + 0.01 &times; &Sigma;(SF_i) &nbsp;&nbsp;&nbsp;<span class="c">// scale exponent — 5 scale factors</span></div>
+<div>E_nom = <span class="k">A</span> &times; Size<sup>B</sup> &times; EAF &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">// A=2.94</span></div>
+<br>
+<div class="c">// LLM Adjustment (Steps 7–9)</div>
+<div>A_i = 1 + (ordinal &times; 0.1) &nbsp;&nbsp;&nbsp;&nbsp;<span class="c">// per-signal factor</span></div>
+<div>E_final = E_nom &times; &prod; A_i &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">// product of all 5 factors</span></div>
+<br>
+<div class="c">// Evaluation (Step 10)</div>
+<div>MAE  = mean(|actual &minus; pred|)</div>
+<div>RMSE = &radic;mean((actual &minus; pred)&sup2;)</div>
+<div>MAPE = mean(|actual &minus; pred| / actual) &times; 100</div>
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== ARCHITECTURE -->
+<section class="section" id="architecture">
+<h2 class="section-title"><span>02 /</span> Technical Architecture</h2>
+<div class="card-grid">
+
+<div class="card">
+<div class="card-title">Technology Stack</div>
+<table class="stack-tbl">
+<tr><td>Frontend</td><td>Next.js 14</td><td>App Router, React 18, TS</td></tr>
+<tr><td>Backend</td><td>NestJS 10</td><td>DI, decorators, modules</td></tr>
+<tr><td>ORM</td><td>TypeORM</td><td>Migrations, JSONB support</td></tr>
+<tr><td>Database</td><td>PostgreSQL 16</td><td>Docker Compose</td></tr>
+<tr><td>LLM</td><td>Claude Sonnet</td><td>JSON mode, prompt caching</td></tr>
+<tr><td>Auth</td><td>None</td><td>Single-researcher academic tool</td></tr>
+<tr><td>Monorepo</td><td>pnpm workspaces</td><td>packages/types + constants</td></tr>
+<tr><td>Testing</td><td>Jest / Vitest</td><td>Supertest + RTL</td></tr>
+</table>
+</div>
+
+<div class="card">
+<div class="card-title">Data Flow</div>
+<div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);line-height:2.1">
+<div style="color:var(--accent)">Browser (Next.js)</div>
+<div style="color:var(--text-dim)">│&nbsp; HTTP/JSON REST</div>
+<div style="color:var(--text-dim)">▼</div>
+<div style="color:var(--yellow)">NestJS API Server</div>
+<div style="color:var(--text-dim)">├── ProjectsModule (CRUD)</div>
+<div style="color:var(--text-dim)">├── EstimationModule (orchestrator)</div>
+<div style="color:var(--green)">├── LlmModule ──── HTTPS ──▶ Claude API</div>
+<div style="color:var(--text-dim)">├── SignalsModule</div>
+<div style="color:var(--text-dim)">├── AdjustmentModule</div>
+<div style="color:var(--text-dim)">├── EvaluationModule</div>
+<div style="color:var(--text-dim)">└── DatasetModule</div>
+<div style="color:var(--text-dim)">│&nbsp; TCP/5432</div>
+<div style="color:var(--text-dim)">▼</div>
+<div style="color:var(--purple)">PostgreSQL 16</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">Monorepo Layout</div>
+<div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.9">
+<div><span style="color:var(--text-dim)">semantic-cost-estimation/</span></div>
+<div><span style="color:var(--text-dim)">├── </span><span style="color:var(--accent)">apps/server/</span><span style="color:var(--text-dim)">&nbsp; NestJS backend</span></div>
+<div><span style="color:var(--text-dim)">│&nbsp;&nbsp; └── src/modules/</span><span style="color:var(--text-dim)">&nbsp; (8 modules)</span></div>
+<div><span style="color:var(--text-dim)">├── </span><span style="color:var(--purple)">apps/client/</span><span style="color:var(--text-dim)">&nbsp; Next.js frontend</span></div>
+<div><span style="color:var(--text-dim)">│&nbsp;&nbsp; └── app/</span><span style="color:var(--text-dim)">&nbsp; (6 route segments)</span></div>
+<div><span style="color:var(--text-dim)">├── </span><span style="color:var(--green)">packages/types/</span><span style="color:var(--text-dim)">&nbsp; Shared TS types</span></div>
+<div><span style="color:var(--text-dim)">├── </span><span style="color:var(--yellow)">packages/constants/</span><span style="color:var(--text-dim)">&nbsp; COCOMO II values</span></div>
+<div><span style="color:var(--text-dim)">├── docker-compose.yml</span></div>
+<div><span style="color:var(--text-dim)">├── pnpm-workspace.yaml</span></div>
+<div><span style="color:var(--text-dim)">└── tsconfig.base.json</span></div>
+</div>
+</div>
+
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== MODULES -->
+<section class="section" id="modules">
+<h2 class="section-title"><span>03 /</span> Backend Modules (NestJS)</h2>
+<div class="mod-grid">
+
+<div class="mod-card m-projects">
+  <div class="mod-name">ProjectsModule</div>
+  <div class="mod-prefix">GET|POST /projects/*</div>
+  <div class="mod-desc">Full CRUD for software projects. Accepts description as plain freetext or structured JSON (key→text pairs). Ownership-scoped to user.</div>
+  <div class="mod-tags">
+    <span class="mod-tag">ProjectsService</span><span class="mod-tag">CreateProjectDto</span>
+    <span class="mod-tag">Project entity</span><span class="mod-tag">inputType enum</span>
+    <span class="mod-tag">inputType enum</span><span class="mod-tag">descriptionJson JSONB</span>
+  </div>
+</div>
+
+<div class="mod-card m-estimation">
+  <div class="mod-name">EstimationModule</div>
+  <div class="mod-prefix">POST /estimations</div>
+  <div class="mod-desc">Orchestrates full pipeline: COCOMO II → LLM → signals → adjustment → persist. Single entry point for external callers.</div>
+  <div class="mod-tags">
+    <span class="mod-tag">EstimationService</span><span class="mod-tag">CocomoService</span>
+    <span class="mod-tag">Estimation entity</span><span class="mod-tag">JSONB inputs</span>
+  </div>
+</div>
+
+<div class="mod-card m-llm">
+  <div class="mod-name">LlmModule</div>
+  <div class="mod-prefix">internal only</div>
+  <div class="mod-desc">Sole consumer of Anthropic SDK. Normalizes both freetext and structured JSON inputs into a single string, builds prompt, calls Claude, validates JSON output, retries on failure.</div>
+  <div class="mod-tags">
+    <span class="mod-tag">LlmService</span><span class="mod-tag">TextNormalizerService</span>
+    <span class="mod-tag">LlmPromptBuilder</span><span class="mod-tag">Zod schema</span><span class="mod-tag">retry ×3</span>
+    <span class="mod-tag">freetext path</span><span class="mod-tag">structured path</span>
+  </div>
+</div>
+
+<div class="mod-card m-signals">
+  <div class="mod-name">SignalsModule</div>
+  <div class="mod-prefix">internal only</div>
+  <div class="mod-desc">Persists five LLM signals and their ordinal mappings per estimation run. Implements A_i = 1 + (ordinal × 0.1).</div>
+  <div class="mod-tags">
+    <span class="mod-tag">SignalsService</span><span class="mod-tag">OrdinalMappingService</span>
+    <span class="mod-tag">Signal entity</span><span class="mod-tag">bulk insert</span>
+  </div>
+</div>
+
+<div class="mod-card m-adjustment">
+  <div class="mod-name">AdjustmentModule</div>
+  <div class="mod-prefix">internal only</div>
+  <div class="mod-desc">Pure computation. Takes nominal effort + five A_i factors, returns E_final and per-signal breakdown. No database entity.</div>
+  <div class="mod-tags">
+    <span class="mod-tag">AdjustmentService</span><span class="mod-tag">AdjustmentInputDto</span>
+    <span class="mod-tag">AdjustmentResultDto</span><span class="mod-tag">no entity</span>
+  </div>
+</div>
+
+<div class="mod-card m-evaluation">
+  <div class="mod-name">EvaluationModule</div>
+  <div class="mod-prefix">POST /evaluations</div>
+  <div class="mod-desc">Computes MAE, RMSE, MAPE for baseline COCOMO vs hybrid over a selected set of projects with known actual effort.</div>
+  <div class="mod-tags">
+    <span class="mod-tag">EvaluationService</span><span class="mod-tag">MetricsService</span>
+    <span class="mod-tag">EvaluationRun entity</span><span class="mod-tag">per-project rows</span>
+  </div>
+</div>
+
+<div class="mod-card m-dataset">
+  <div class="mod-name">DatasetModule</div>
+  <div class="mod-prefix">POST /datasets/import</div>
+  <div class="mod-desc">Bulk CSV import of historical projects for evaluation experiments. Row-level validation with error reporting.</div>
+  <div class="mod-tags">
+    <span class="mod-tag">DatasetService</span><span class="mod-tag">importFromCsv()</span>
+    <span class="mod-tag">Multer upload</span><span class="mod-tag">ImportResultDto</span>
+  </div>
+</div>
+
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== PAGES -->
+<section class="section" id="pages">
+<h2 class="section-title"><span>04 /</span> Frontend Pages (Next.js)</h2>
+<div class="page-map">
+
+<div class="page-card">
+  <div class="page-route">/projects</div>
+  <div class="page-name">Project List</div>
+  <div class="page-desc">Dashboard of all projects as cards with last estimation status and quick actions.</div>
+  <div class="page-comps"><strong>Key Components</strong>ProjectCard · ProjectGrid · EmptyState · Pagination</div>
+</div>
+
+<div class="page-card">
+  <div class="page-route">/projects/:id</div>
+  <div class="page-name">Project Detail</div>
+  <div class="page-desc">Project attributes, estimation history, and "Run Estimation" trigger with live status.</div>
+  <div class="page-comps"><strong>Key Components</strong>ProjectHeader · ProjectAttributes · EstimationHistory · RunEstimationButton</div>
+</div>
+
+<div class="page-card">
+  <div class="page-route">/estimation/:id</div>
+  <div class="page-name">Estimation Detail</div>
+  <div class="page-desc">Signal radar chart, per-signal breakdown with LLM rationale, formula trace, effort comparison bar.</div>
+  <div class="page-comps"><strong>Key Components</strong>SignalRadarChart · SignalBreakdownTable · FormulaTrace · EffortComparisonBar</div>
+</div>
+
+<div class="page-card">
+  <div class="page-route">/evaluation</div>
+  <div class="page-name">Evaluation Dashboard</div>
+  <div class="page-desc">Run experiments: select projects, compute MAE/RMSE/MAPE, compare baseline vs hybrid.</div>
+  <div class="page-comps"><strong>Key Components</strong>EvaluationForm · MetricsComparisonTable · PerProjectErrorChart · ImprovementBadge</div>
+</div>
+
+<div class="page-card">
+  <div class="page-route">/dataset</div>
+  <div class="page-name">Dataset Import</div>
+  <div class="page-desc">CSV drag-and-drop with column mapping, row-level error reporting, and import summary.</div>
+  <div class="page-comps"><strong>Key Components</strong>CsvDropzone · ColumnMappingForm · ImportProgress · ImportErrorList</div>
+</div>
+
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== API -->
+<section class="section" id="api">
+<h2 class="section-title"><span>05 /</span> REST API Endpoints</h2>
+<div class="card">
+
+<div class="ep-group">
+  <div class="ep-group-title">Projects</div>
+  <div class="ep-row"><span class="method m-post">POST</span><span class="ep-path">/api/v1/projects</span><span class="ep-desc">Create project. Validates domain, sizeKloc, teamSize. Accepts <code>inputType: freetext | structured</code> — exactly one of <code>descriptionText</code> or <code>descriptionJson</code> required.</span></div>
+  <div class="ep-row"><span class="method m-get">GET</span><span class="ep-path">/api/v1/projects?page&amp;limit</span><span class="ep-desc">Paginated list of all projects.</span></div>
+  <div class="ep-row"><span class="method m-get">GET</span><span class="ep-path">/api/v1/projects/:id</span><span class="ep-desc">Single project. 404 if not found.</span></div>
+  <div class="ep-row"><span class="method m-patch">PATCH</span><span class="ep-path">/api/v1/projects/:id</span><span class="ep-desc">Partial update. Same validations as create.</span></div>
+  <div class="ep-row"><span class="method m-delete">DELETE</span><span class="ep-path">/api/v1/projects/:id</span><span class="ep-desc">Delete. Cascades to estimations and signals. 204.</span></div>
+</div>
+
+<div class="ep-group">
+  <div class="ep-group-title">Estimations</div>
+  <div class="ep-row"><span class="method m-post">POST</span><span class="ep-path">/api/v1/estimations</span><span class="ep-desc">Trigger full pipeline for <code>{ projectId }</code>. Returns status: running.</span></div>
+  <div class="ep-row"><span class="method m-get">GET</span><span class="ep-path">/api/v1/estimations?projectId=</span><span class="ep-desc">List estimations for a project.</span></div>
+  <div class="ep-row"><span class="method m-get">GET</span><span class="ep-path">/api/v1/estimations/:id</span><span class="ep-desc">Detail with nested signals and adjustmentResult.</span></div>
+</div>
+
+<div class="ep-group">
+  <div class="ep-group-title">Evaluations</div>
+  <div class="ep-row"><span class="method m-post">POST</span><span class="ep-path">/api/v1/evaluations</span><span class="ep-desc">Run evaluation. All projects must have actualEffortPm and completed estimation.</span></div>
+  <div class="ep-row"><span class="method m-get">GET</span><span class="ep-path">/api/v1/evaluations</span><span class="ep-desc">List evaluation runs.</span></div>
+  <div class="ep-row"><span class="method m-get">GET</span><span class="ep-path">/api/v1/evaluations/:id</span><span class="ep-desc">Result with per-project rows.</span></div>
+</div>
+
+<div class="ep-group" style="margin-bottom:0">
+  <div class="ep-group-title">Dataset</div>
+  <div class="ep-row"><span class="method m-post">POST</span><span class="ep-path">/api/v1/datasets/import</span><span class="ep-desc">Multipart CSV upload. Max 10 MB. Required columns: name, domain, size_kloc, team_size.</span></div>
+</div>
+
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== LLM -->
+<section class="section" id="llm">
+<h2 class="section-title"><span>06 /</span> LLM Integration Design</h2>
+<div class="two-col">
+
+<div class="card">
+  <div class="card-title">Prompt Structure</div>
+  <div class="prompt-box">
+    <div style="color:var(--purple)">SYSTEM (cached prefix):</div>
+    <div>You are a software engineering expert.</div>
+    <div>Evaluate the project on exactly five signals.</div>
+    <div>Return ONLY valid JSON. No effort estimates.</div>
+    <br>
+    <div style="color:var(--yellow)">Signal definitions: (5 defined)</div>
+    <div style="color:var(--yellow)">Levels: very_low|low|medium|high|very_high</div>
+    <br>
+    <div style="color:var(--green)">OUTPUT SCHEMA:</div>
+    <div>{"functional_complexity":</div>
+    <div>&nbsp; {"level":"...","rationale":"..."},</div>
+    <div>&nbsp;... (5 total)}</div>
+    <br>
+    <div style="color:var(--purple)">USER:</div>
+    <div>Project description:</div>
+    <div style="color:var(--cyan)">&lt;normalized_text&gt;</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Retry Strategy</div>
+  <div style="margin-bottom:14px">
+    <div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="background:var(--accent-soft);color:var(--accent);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</div>
+      <div style="font-size:13px;color:var(--text-muted)">Call Claude → parse JSON → validate Zod schema</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="background:var(--yellow-soft);color:var(--yellow);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</div>
+      <div style="font-size:13px;color:var(--text-muted)">On failure → wait 1 s → retry</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="background:var(--orange-soft);color:var(--orange);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</div>
+      <div style="font-size:13px;color:var(--text-muted)">On failure → wait 2 s → retry</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;padding:9px 0">
+      <div style="background:var(--red-soft);color:var(--red);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">✕</div>
+      <div style="font-size:13px;color:var(--text-muted)">After 3 failures → LlmUnavailableException (503)</div>
+    </div>
+  </div>
+  <div style="font-size:13px;color:var(--text-muted)"><strong style="color:var(--text)">Cost control:</strong> System prompt cached via Anthropic prefix caching. Input truncated to ~1500 tokens. ~$0.002 per run.</div>
+</div>
+
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== SIGNALS -->
+<section class="section" id="signals">
+<h2 class="section-title"><span>07 /</span> Qualitative Signals &amp; Ordinal Mapping</h2>
+
+<div class="card mb-4">
+<table class="sig-table">
+<thead>
+  <tr><th>Signal</th><th>What Claude Evaluates</th><th>High = more effort?</th><th>Example High Case</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td><span class="sig-name">functional_complexity</span></td>
+    <td>Complexity of core business logic and user-facing features</td>
+    <td style="color:var(--red)">Yes</td>
+    <td style="font-size:12px;color:var(--text-dim)">Multi-tenant SaaS with complex billing rules</td>
+  </tr>
+  <tr>
+    <td><span class="sig-name">architectural_complexity</span></td>
+    <td>System design — microservices, distributed state, CQRS</td>
+    <td style="color:var(--red)">Yes</td>
+    <td style="font-size:12px;color:var(--text-dim)">Event-sourced CQRS with 12 services</td>
+  </tr>
+  <tr>
+    <td><span class="sig-name">external_integrations</span></td>
+    <td>Count and complexity of third-party APIs and data sources</td>
+    <td style="color:var(--red)">Yes</td>
+    <td style="font-size:12px;color:var(--text-dim)">8 payment gateways, 3 ERPs, real-time feeds</td>
+  </tr>
+  <tr>
+    <td><span class="sig-name">requirement_stability</span></td>
+    <td>How stable and well-defined are the requirements?</td>
+    <td style="color:var(--green)">No — High = stable = less effort</td>
+    <td style="font-size:12px;color:var(--text-dim)">Detailed spec with signed-off user stories</td>
+  </tr>
+  <tr>
+    <td><span class="sig-name">uncertainty</span></td>
+    <td>Overall uncertainty in scope, tech choice, or team capability</td>
+    <td style="color:var(--red)">Yes</td>
+    <td style="font-size:12px;color:var(--text-dim)">New ML stack, first-time domain, unclear timeline</td>
+  </tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<div class="card-title">Ordinal Mapping &amp; Adjustment Factors</div>
+<table class="ord-table">
+<thead><tr><th>Level</th><th>Ordinal</th><th>A_i = 1 + (ord × 0.1)</th><th>Effect on E_nom</th></tr></thead>
+<tbody>
+  <tr><td class="ovl">Very Low</td><td class="ovl">−3</td><td class="ovl">0.70</td><td style="font-size:13px;color:var(--text-muted);text-align:left;padding-left:16px">Reduces effort by 30%</td></tr>
+  <tr><td class="ol">Low</td><td class="ol">−1</td><td class="ol">0.90</td><td style="font-size:13px;color:var(--text-muted);text-align:left;padding-left:16px">Reduces effort by 10%</td></tr>
+  <tr><td class="om">Medium</td><td class="om">0</td><td class="om">1.00</td><td style="font-size:13px;color:var(--text-muted);text-align:left;padding-left:16px">No change (neutral baseline)</td></tr>
+  <tr><td class="oh">High</td><td class="oh">+1</td><td class="oh">1.10</td><td style="font-size:13px;color:var(--text-muted);text-align:left;padding-left:16px">Increases effort by 10%</td></tr>
+  <tr><td class="ovh">Very High</td><td class="ovh">+3</td><td class="ovh">1.30</td><td style="font-size:13px;color:var(--text-muted);text-align:left;padding-left:16px">Increases effort by 30%</td></tr>
+</tbody>
+</table>
+<div style="margin-top:14px;font-size:13px;color:var(--text-muted)">
+  <strong style="color:var(--text)">Range:</strong> All Very Low → 0.70<sup>5</sup> ≈ <span style="color:var(--green)">0.17×</span> baseline &nbsp;|&nbsp; All Very High → 1.30<sup>5</sup> ≈ <span style="color:var(--red)">3.71×</span> baseline
+</div>
+</div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ======================================================== MILESTONES -->
+<section class="section" id="milestones">
+<h2 class="section-title"><span>08 /</span> Project Milestones</h2>
+<div class="timeline">
+
+<!-- M1 -->
+<div class="ms">
+  <div class="ms-dot plan">1</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 01</div>
+        <div class="ms-title">Project Bootstrap</div>
+        <div class="ms-goal">Working monorepo with both apps running locally, connected to PostgreSQL.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>Initialize pnpm workspace + workspace.yaml</li>
+            <li>Scaffold NestJS and Next.js apps</li>
+            <li>Create packages/types and packages/constants</li>
+            <li>tsconfig.base.json with path aliases</li>
+            <li>Docker Compose — PostgreSQL + pgAdmin</li>
+            <li>TypeORM DataSource + @nestjs/config typed env</li>
+            <li>ESLint + Prettier across all workspaces</li>
+            <li>Root dev script via concurrently</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">pnpm dev starts both apps. GET /api/v1/health returns 200. Next.js renders placeholder page.</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>Both apps compile — zero TypeScript errors</li>
+            <li>API connects to PostgreSQL</li>
+            <li>packages/types importable from both apps</li>
+          </ul>
+          <div class="risk-item">pnpm path alias resolution between workspaces — allocate extra time for tsconfig linking.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M2 -->
+<!-- M2 -->
+<div class="ms">
+  <div class="ms-dot plan">2</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 02</div>
+        <div class="ms-title">Project Management</div>
+        <div class="ms-goal">Full CRUD for projects with frontend forms.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>Project entity + migration</li>
+            <li>ProjectsService</li>
+            <li>ProjectsController (5 endpoints)</li>
+            <li>CreateProjectDto with class-validator</li>
+            <li>Project List page (/projects)</li>
+            <li>Project Detail page — static view</li>
+            <li>Create / Edit form with inputType toggle</li>
+            <li>Free Text mode — single textarea</li>
+            <li>Structured mode — dynamic key→value field builder</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">User can create projects with COCOMO params and description (freetext or structured).</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>Full CRUD; 404 on missing project</li>
+            <li>Project list shows all projects</li>
+            <li>Frontend form validates required fields</li>
+            <li>inputType toggle switches between textarea and key–value builder</li>
+            <li>API rejects payload with both or neither description fields (422)</li>
+          </ul>
+          <div class="risk-item">Keep COCOMO parameter exposure minimal — only what the formula requires.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M3 -->
+<div class="ms">
+  <div class="ms-dot plan">3</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 03</div>
+        <div class="ms-title">COCOMO II Baseline</div>
+        <div class="ms-goal">Implement COCOMO II Intermediate model and produce a nominal effort estimate.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>COCOMO II constants in packages/constants</li>
+            <li>CocomoService.computeNominalEffort()</li>
+            <li>Unit tests using handbook examples</li>
+            <li>Estimation entity + migration</li>
+            <li>EstimationService — COCOMO only, no LLM yet</li>
+            <li>EstimationController</li>
+            <li>"Run Estimation" button on Project Detail</li>
+            <li>Display baseline on Project Detail</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">Clicking "Run Estimation" produces a COCOMO II nominal effort in person-months.</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>Unit test: organic 10 KLOC → matches handbook E_nom</li>
+            <li>POST /estimations returns nominalEffortPm &gt; 0</li>
+            <li>Frontend displays baseline estimate</li>
+          </ul>
+          <div class="risk-item">Scope to COCOMO II Intermediate — avoid drifting to Post-Architecture variant.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M4 -->
+<div class="ms">
+  <div class="ms-dot plan">4</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 04</div>
+        <div class="ms-title">LLM Signal Extraction</div>
+        <div class="ms-goal">Integrate Claude API and extract the five qualitative signals from project descriptions.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>Add @anthropic-ai/sdk to apps/server</li>
+            <li>TextNormalizerService</li>
+            <li>LlmPromptBuilder</li>
+            <li>LlmService with retry logic (3 attempts)</li>
+            <li>Zod schema validation of Claude output</li>
+            <li>Signal entity + migration</li>
+            <li>SignalsService.createBulk()</li>
+            <li>OrdinalMappingService</li>
+            <li>Wire LLM into EstimationService</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">After running estimation, five Signal records exist in the database with ordinals and rationale.</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>LlmService returns valid LlmSignalsDto with mock</li>
+            <li>Retries 3× on invalid JSON then throws 503</li>
+            <li>Five Signal rows in DB after runEstimation() with mocked LLM</li>
+          </ul>
+          <div class="risk-item">Claude may add commentary around JSON — prompt must be strict; retry handles parse failures.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M5 -->
+<div class="ms">
+  <div class="ms-dot plan">5</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 05</div>
+        <div class="ms-title">Hybrid Estimation &amp; Detail View</div>
+        <div class="ms-goal">Compute E_final and display the full signal breakdown in the UI.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>AdjustmentService.compute()</li>
+            <li>Wire adjustment into runEstimation()</li>
+            <li>Estimation Detail page (/estimation/:id)</li>
+            <li>EffortComparisonBar component</li>
+            <li>SignalRadarChart (CSS/canvas)</li>
+            <li>SignalBreakdownTable with rationale</li>
+            <li>FormulaTrace component</li>
+            <li>AdjustmentFactorPill color coding</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">Full pipeline end-to-end. Detail page shows COCOMO baseline, five signals, A_i factors, and E_final.</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>Create → run → detail page shows both estimates</li>
+            <li>AdjustmentService unit test: correct E_final</li>
+            <li>Factors color-coded correctly</li>
+          </ul>
+          <div class="risk-item">Radar chart without a library — budget extra time for the canvas/CSS component.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M6 -->
+<div class="ms">
+  <div class="ms-dot plan">6</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 06</div>
+        <div class="ms-title">Evaluation Framework</div>
+        <div class="ms-goal">MAE / RMSE / MAPE for baseline vs hybrid over a project set.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>MetricsService (MAE, RMSE, MAPE)</li>
+            <li>EvaluationService.runEvaluation()</li>
+            <li>EvaluationRun entity + migration</li>
+            <li>EvaluationController</li>
+            <li>Evaluation Dashboard page</li>
+            <li>MetricsComparisonTable + ImprovementBadge</li>
+            <li>PerProjectErrorChart</li>
+            <li>Dataset Import page + DatasetService</li>
+            <li>DatasetController (CSV multipart)</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">User can upload CSV, run evaluation, view MAE/RMSE/MAPE for both models with per-project chart.</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>MetricsService matches hand-computed values for 5-row fixture</li>
+            <li>POST /evaluations returns all six metric values</li>
+            <li>10-row test CSV imports successfully</li>
+          </ul>
+          <div class="risk-item">Real dataset CSV formats (ISBSG, PROMISE) are inconsistent — add flexible column mapping.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M7 -->
+<div class="ms">
+  <div class="ms-dot plan">7</div>
+  <div class="ms-content">
+    <div class="ms-header">
+      <div>
+        <div class="ms-num">Milestone 07</div>
+        <div class="ms-title">Thesis Evaluation &amp; Polish</div>
+        <div class="ms-goal">Run real evaluation on 20+ projects, fix edge cases, polish UI and documentation.</div>
+      </div>
+      <span class="badge badge-planned">Planned</span>
+    </div>
+    <div class="ms-body">
+      <div class="ms-grid">
+        <div>
+          <div class="ms-sec-title">Tasks</div>
+          <ul class="task-list">
+            <li>Source or generate 20–50 historical projects</li>
+            <li>Run full pipeline (real Claude API calls)</li>
+            <li>Record hybrid vs baseline metrics</li>
+            <li>Analyze per-signal contribution</li>
+            <li>Fix edge cases from real-data testing</li>
+            <li>Improve loading and empty states</li>
+            <li>Write README with setup instructions</li>
+            <li>Add Swagger via @nestjs/swagger</li>
+            <li>Final code review — remove debug logs</li>
+          </ul>
+        </div>
+        <div>
+          <div class="ms-sec-title">Expected Output</div>
+          <div class="output-box">Complete demo-ready application with real evaluation results and thesis-ready metrics report.</div>
+          <div class="ms-sec-title">Acceptance Criteria</div>
+          <ul class="crit-list">
+            <li>Evaluation runs on 20+ projects without errors</li>
+            <li>Hybrid and baseline MAPE both reported</li>
+            <li>GET /api/v1/docs returns 200 (Swagger)</li>
+            <li>Zero TypeScript errors across all workspaces</li>
+            <li>New developer can run project in &lt;10 min</li>
+          </ul>
+          <div class="risk-item">If hybrid MAPE is not consistently better, thesis must include fallback analysis of when signals help vs. hurt.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end timeline -->
+</section>
+
+</div><!-- end page -->
+</body>
+</html>
