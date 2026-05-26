@@ -16,15 +16,3 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
 }
-
-export type CreateProjectInput = {
-  name: string;
-  domain: DomainType;
-  sizeKloc: number;
-  teamSize: number;
-  experienceLevel: ExperienceLevel;
-  actualEffortPm?: number;
-} & (
-  | { inputType: 'freetext'; descriptionText: string; descriptionJson?: never }
-  | { inputType: 'structured'; descriptionJson: Record<string, string>; descriptionText?: never }
-);

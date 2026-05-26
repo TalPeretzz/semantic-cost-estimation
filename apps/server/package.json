@@ -19,6 +19,8 @@
     "@sce/types": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "nestjs-zod": "^4.3.1",
+    "zod": "^3.23.8",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -42,6 +44,10 @@
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^@sce/types$": "<rootDir>/../../../packages/types/dist/index.js",
+      "^@sce/constants$": "<rootDir>/../../../packages/constants/src/index.ts"
     },
     "collectCoverageFrom": ["**/*.(t|j)s"],
     "coverageDirectory": "../coverage",

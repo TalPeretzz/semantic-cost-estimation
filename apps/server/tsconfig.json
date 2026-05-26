@@ -7,7 +7,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "@sce/types": ["../../packages/types/src/index.ts"],
+      "@sce/types": ["../../packages/types/dist/index.d.ts"],
       "@sce/constants": ["../../packages/constants/src/index.ts"]
     }
   },
