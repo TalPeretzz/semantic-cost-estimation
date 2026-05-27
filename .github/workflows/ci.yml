@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  server-test:
+    name: Server — test + coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Build @sce/types
+        run: pnpm --filter @sce/types build
+        working-directory: .
+
+      - name: Build @sce/constants
+        run: pnpm --filter @sce/constants build
+        working-directory: .
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test with coverage
+        run: npx jest --coverage --coverageThreshold='{"global":{"lines":80,"functions":80,"branches":80,"statements":80}}'
+
+  client-typecheck:
+    name: Client — typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Build @sce/types
+        run: pnpm --filter @sce/types build
+        working-directory: .
+
+      - name: Typecheck
+        run: npx tsc --noEmit
