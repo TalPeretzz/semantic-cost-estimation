@@ -1,17 +1,135 @@
 /**
- * Projects list page — Milestone 1 placeholder.
- * Will be replaced with a full project list and creation flow in Milestone 2.
+ * Projects list page.
+ *
+ * Fetches all projects from the NestJS backend and renders them as a list of
+ * cards, each linking to the project detail page at /projects/[id].
  */
-export default function ProjectsPage() {
+
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { apiFetch, ApiError } from '@/lib/api-client';
+import type { Project } from '@sce/types';
+
+// ---------------------------------------------------------------------------
+// Paginated response shape returned by GET /projects
+// ---------------------------------------------------------------------------
+
+interface PaginatedProjects {
+  data: Project[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ---------------------------------------------------------------------------
+// Project card
+// ---------------------------------------------------------------------------
+
+function ProjectCard({ project }: { project: Project }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
-      <div className="w-full max-w-2xl space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          Projects
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          Milestone 1 — bootstrap complete.
-        </p>
+    <Link
+      href={`/projects/${project.id}`}
+      className="block rounded-lg border border-border bg-muted px-5 py-4 transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <p className="truncate font-semibold text-foreground">{project.name}</p>
+          <p className="text-xs text-muted-foreground capitalize">
+            {project.domain} &middot; {project.sizeKloc} KLOC &middot; team {project.teamSize}
+          </p>
+        </div>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {project.inputType}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+
+function ProjectListSkeleton() {
+  return (
+    <ul className="space-y-3 animate-pulse" aria-busy="true" aria-label="Loading projects">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <li key={i} className="h-16 rounded-lg bg-muted" />
+      ))}
+    </ul>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+
+export default function ProjectsPage() {
+  const [projects, setProjects]   = useState<Project[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadProjects() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await apiFetch<PaginatedProjects>('/projects');
+        setProjects(result.data);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError('Failed to load projects. Please refresh the page.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProjects();
+  }, []);
+
+  return (
+    <main className="min-h-screen px-6 py-16">
+      <div className="mx-auto max-w-3xl space-y-8">
+
+        {/* Header */}
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Projects</h1>
+          <p className="text-sm text-muted-foreground">
+            Select a project to view details and run cost estimations.
+          </p>
+        </div>
+
+        {/* Content */}
+        {loading && <ProjectListSkeleton />}
+
+        {!loading && error && (
+          <p className="text-sm text-red-400" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && projects.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No projects found. Create one via the API to get started.
+          </p>
+        )}
+
+        {!loading && !error && projects.length > 0 && (
+          <ul className="space-y-3">
+            {projects.map((project) => (
+              <li key={project.id}>
+                <ProjectCard project={project} />
+              </li>
+            ))}
+          </ul>
+        )}
+
       </div>
     </main>
   );

@@ -8,8 +8,10 @@
  * Never use raw fetch() in page or component files — always go through this module.
  */
 
+import type { Estimation } from '@sce/types';
+
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export class ApiError extends Error {
   constructor(
@@ -59,4 +61,26 @@ export async function apiFetch<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+/**
+ * Triggers a new COCOMO II estimation run for the given project.
+ * Returns the newly created Estimation record (status will be 'running' initially).
+ */
+export async function runEstimation(projectId: string): Promise<Estimation> {
+  return apiFetch<Estimation>('/estimations', {
+    method: 'POST',
+    body: JSON.stringify({ projectId }),
+  });
+}
+
+/**
+ * Fetches all estimation runs associated with a given project, newest first.
+ */
+export async function getEstimationsByProject(
+  projectId: string,
+): Promise<Estimation[]> {
+  return apiFetch<Estimation[]>(
+    `/estimations?projectId=${encodeURIComponent(projectId)}`,
+  );
 }
