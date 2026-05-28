@@ -8,7 +8,7 @@
     "rootDir": "./src",
     "paths": {
       "@sce/types": ["../../packages/types/dist/index.d.ts"],
-      "@sce/constants": ["../../packages/constants/src/index.ts"]
+      "@sce/constants": ["../../packages/constants/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"]

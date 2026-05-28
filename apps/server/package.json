@@ -47,7 +47,7 @@
     },
     "moduleNameMapper": {
       "^@sce/types$": "<rootDir>/../../../packages/types/dist/index.js",
-      "^@sce/constants$": "<rootDir>/../../../packages/constants/src/index.ts"
+      "^@sce/constants$": "<rootDir>/../../../packages/constants/dist/index.js"
     },
     "collectCoverageFrom": ["**/*.(t|j)s"],
     "coverageDirectory": "../coverage",

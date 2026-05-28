@@ -7,6 +7,12 @@ build/
 .next/
 out/
 
+# Compiled output accidentally placed in src/ (mis-configured tsc runs)
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+
 # Environment files
 .env
 .env.local
