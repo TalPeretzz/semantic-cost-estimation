@@ -6,6 +6,7 @@ dist/
 build/
 .next/
 out/
+coverage/
 
 # Compiled output accidentally placed in src/ (mis-configured tsc runs)
 packages/*/src/**/*.js
