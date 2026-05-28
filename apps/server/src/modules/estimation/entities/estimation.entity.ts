@@ -18,6 +18,9 @@ export class Estimation {
   @Column({ type: 'float', nullable: true })
   nominalEffortPm!: number | null;
 
+  @Column({ type: 'float', nullable: true })
+  hybridEffortPm!: number | null;
+
   @Column({ type: 'jsonb', nullable: true })
   cocomoInputs!: Record<string, unknown> | null;
 

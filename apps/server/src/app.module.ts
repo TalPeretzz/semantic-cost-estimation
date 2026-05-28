@@ -5,6 +5,8 @@ import { validateEnv } from './config/env.validation';
 import { HealthModule } from './modules/health/health.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { EstimationModule } from './modules/estimation/estimation.module';
+import { LlmModule } from './modules/llm/llm.module';
+import { SignalsModule } from './modules/signals/signals.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { EstimationModule } from './modules/estimation/estimation.module';
     HealthModule,
     ProjectsModule,
     EstimationModule,
+    LlmModule,
+    SignalsModule,
   ],
 })
 export class AppModule {}
