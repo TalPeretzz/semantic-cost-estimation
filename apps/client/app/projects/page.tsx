@@ -1,10 +1,3 @@
-/**
- * Projects list page.
- *
- * Fetches all projects from the NestJS backend and renders them as a list of
- * cards, each linking to the project detail page at /projects/[id].
- */
-
 'use client';
 
 import Link from 'next/link';
@@ -12,20 +5,12 @@ import { useEffect, useState } from 'react';
 import { apiFetch, ApiError } from '@/lib/api-client';
 import type { Project } from '@sce/types';
 
-// ---------------------------------------------------------------------------
-// Paginated response shape returned by GET /projects
-// ---------------------------------------------------------------------------
-
 interface PaginatedProjects {
   data: Project[];
   total: number;
   page: number;
   limit: number;
 }
-
-// ---------------------------------------------------------------------------
-// Project card
-// ---------------------------------------------------------------------------
 
 function ProjectCard({ project }: { project: Project }) {
   return (
@@ -40,17 +25,11 @@ function ProjectCard({ project }: { project: Project }) {
             {project.domain} &middot; {project.sizeKloc} KLOC &middot; team {project.teamSize}
           </p>
         </div>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {project.inputType}
-        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">{project.inputType}</span>
       </div>
     </Link>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Loading skeleton
-// ---------------------------------------------------------------------------
 
 function ProjectListSkeleton() {
   return (
@@ -62,42 +41,34 @@ function ProjectListSkeleton() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
-
 export default function ProjectsPage() {
-  const [projects, setProjects]   = useState<Project[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProjects() {
       setLoading(true);
       setError(null);
-
       try {
         const result = await apiFetch<PaginatedProjects>('/projects');
         setProjects(result.data);
       } catch (err) {
-        if (err instanceof ApiError) {
-          setError(err.message);
-        } else {
-          setError('Failed to load projects. Please refresh the page.');
-        }
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : 'Failed to load projects. Please refresh the page.',
+        );
       } finally {
         setLoading(false);
       }
     }
-
     loadProjects();
   }, []);
 
   return (
     <main className="min-h-screen px-6 py-16">
       <div className="mx-auto max-w-3xl space-y-8">
-
-        {/* Header */}
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Projects</h1>
           <p className="text-sm text-muted-foreground">
@@ -105,13 +76,10 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        {/* Content */}
         {loading && <ProjectListSkeleton />}
 
         {!loading && error && (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
+          <p className="text-sm text-red-400" role="alert">{error}</p>
         )}
 
         {!loading && !error && projects.length === 0 && (
@@ -129,7 +97,6 @@ export default function ProjectsPage() {
             ))}
           </ul>
         )}
-
       </div>
     </main>
   );

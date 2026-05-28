@@ -1,11 +1,3 @@
-/**
- * Project Detail page — shows project metadata, past estimation runs, and
- * allows the user to trigger a new COCOMO II estimation via the backend.
- *
- * This is a Client Component because it handles user interaction (run button)
- * and needs to refetch estimation results after a run completes.
- */
-
 'use client';
 
 import Link from 'next/link';
@@ -13,17 +5,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { apiFetch, runEstimation, getEstimationsByProject, ApiError } from '@/lib/api-client';
 import type { Estimation, EstimationStatus, Project } from '@sce/types';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface PageProps {
   params: { id: string };
 }
-
-// ---------------------------------------------------------------------------
-// Status badge
-// ---------------------------------------------------------------------------
 
 const STATUS_STYLES: Record<EstimationStatus, string> = {
   completed: 'bg-green-900 text-green-300 border border-green-700',
@@ -34,25 +18,16 @@ const STATUS_STYLES: Record<EstimationStatus, string> = {
 
 function StatusBadge({ status }: { status: EstimationStatus }) {
   return (
-    <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}
-    >
+    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}>
       {status}
     </span>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Estimation row
-// ---------------------------------------------------------------------------
-
 function EstimationRow({ estimation }: { estimation: Estimation }) {
   const runDate = new Date(estimation.runAt).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 
   return (
@@ -63,9 +38,8 @@ function EstimationRow({ estimation }: { estimation: Estimation }) {
           <span className="text-red-400 text-xs">{estimation.errorMessage}</span>
         )}
       </div>
-
       <div className="flex items-center gap-4">
-        {estimation.status === 'completed' && (
+        {estimation.status === 'completed' && estimation.nominalEffortPm != null && (
           <span className="font-medium text-foreground">
             {estimation.nominalEffortPm.toFixed(1)}{' '}
             <span className="text-muted-foreground font-normal">person-months</span>
@@ -77,10 +51,6 @@ function EstimationRow({ estimation }: { estimation: Estimation }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Detail field helper
-// ---------------------------------------------------------------------------
-
 function Field({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -90,10 +60,6 @@ function Field({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
-
 export default function ProjectDetailPage({ params }: PageProps) {
   const { id } = params;
 
@@ -101,15 +67,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [estimations, setEstimations] = useState<Estimation[]>([]);
   const [loadingPage, setLoadingPage] = useState(true);
   const [pageError, setPageError]     = useState<string | null>(null);
-
   const [running, setRunning]         = useState(false);
   const [runError, setRunError]       = useState<string | null>(null);
 
-  // Fetch project + estimations on mount
   const loadData = useCallback(async () => {
     setLoadingPage(true);
     setPageError(null);
-
     try {
       const [fetchedProject, fetchedEstimations] = await Promise.all([
         apiFetch<Project>(`/projects/${id}`),
@@ -118,44 +81,34 @@ export default function ProjectDetailPage({ params }: PageProps) {
       setProject(fetchedProject);
       setEstimations(fetchedEstimations);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
-        setPageError('Project not found.');
-      } else {
-        setPageError('Failed to load project data. Please try again.');
-      }
+      setPageError(
+        err instanceof ApiError && err.status === 404
+          ? 'Project not found.'
+          : 'Failed to load project data. Please try again.',
+      );
     } finally {
       setLoadingPage(false);
     }
   }, [id]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Trigger a new estimation run
   async function handleRunEstimation() {
     setRunning(true);
     setRunError(null);
-
     try {
       await runEstimation(id);
-      // Refresh estimation list after triggering the run
-      const updated = await getEstimationsByProject(id);
-      setEstimations(updated);
+      setEstimations(await getEstimationsByProject(id));
     } catch (err) {
-      if (err instanceof ApiError) {
-        setRunError(err.message);
-      } else {
-        setRunError('Failed to start estimation. Please try again.');
-      }
+      setRunError(
+        err instanceof ApiError
+          ? err.message
+          : 'Failed to start estimation. Please try again.',
+      );
     } finally {
       setRunning(false);
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Loading state
-  // ---------------------------------------------------------------------------
 
   if (loadingPage) {
     return (
@@ -164,24 +117,16 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <div className="h-8 w-48 rounded bg-muted" />
           <div className="h-4 w-32 rounded bg-muted" />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 rounded bg-muted" />
-            ))}
+            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-10 rounded bg-muted" />)}
           </div>
           <div className="h-10 w-36 rounded bg-muted" />
           <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-14 rounded bg-muted" />
-            ))}
+            {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-14 rounded bg-muted" />)}
           </div>
         </div>
       </main>
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Error state (page-level)
-  // ---------------------------------------------------------------------------
 
   if (pageError) {
     return (
@@ -189,10 +134,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <div className="w-full max-w-md space-y-4 text-center">
           <p className="text-4xl font-bold text-muted-foreground">Error</p>
           <p className="text-muted-foreground">{pageError}</p>
-          <Link
-            href="/projects"
-            className="inline-block rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80"
-          >
+          <Link href="/projects" className="inline-block rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80">
             Back to Projects
           </Link>
         </div>
@@ -202,59 +144,38 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
   if (!project) return null;
 
-  // ---------------------------------------------------------------------------
-  // Success state
-  // ---------------------------------------------------------------------------
-
   return (
     <main className="min-h-screen px-6 py-16">
       <div className="mx-auto max-w-3xl space-y-10">
-
-        {/* Back navigation */}
-        <Link
-          href="/projects"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-opacity hover:opacity-80"
-        >
+        <Link href="/projects" className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-opacity hover:opacity-80">
           <span aria-hidden="true">&#8592;</span> All Projects
         </Link>
 
-        {/* Project header */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            {project.name}
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{project.name}</h1>
           <p className="text-sm text-muted-foreground">Project ID: {project.id}</p>
         </div>
 
-        {/* Project metadata */}
         <section aria-labelledby="project-details-heading">
-          <h2
-            id="project-details-heading"
-            className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-          >
+          <h2 id="project-details-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Project Details
           </h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-4 rounded-lg border border-border bg-muted px-5 py-4 sm:grid-cols-3">
-            <Field label="Domain"           value={project.domain} />
-            <Field label="Size"             value={`${project.sizeKloc} KLOC`} />
-            <Field label="Team Size"        value={project.teamSize} />
-            <Field label="Experience"       value={project.experienceLevel.replace('_', ' ')} />
-            <Field label="Input Type"       value={project.inputType} />
-            {project.actualEffortPm !== null && project.actualEffortPm !== undefined && (
-              <Field label="Actual Effort"  value={`${project.actualEffortPm.toFixed(1)} person-months`} />
+            <Field label="Domain"      value={project.domain} />
+            <Field label="Size"        value={`${project.sizeKloc} KLOC`} />
+            <Field label="Team Size"   value={project.teamSize} />
+            <Field label="Experience"  value={project.experienceLevel.replace(/_/g, ' ')} />
+            <Field label="Input Type"  value={project.inputType} />
+            {project.actualEffortPm != null && (
+              <Field label="Actual Effort" value={`${project.actualEffortPm.toFixed(1)} person-months`} />
             )}
           </div>
         </section>
 
-        {/* Run estimation */}
         <section aria-labelledby="run-estimation-heading">
-          <h2
-            id="run-estimation-heading"
-            className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-          >
+          <h2 id="run-estimation-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Estimation
           </h2>
-
           <button
             type="button"
             onClick={handleRunEstimation}
@@ -263,27 +184,15 @@ export default function ProjectDetailPage({ params }: PageProps) {
           >
             {running ? 'Running...' : 'Run Estimation'}
           </button>
-
-          {runError && (
-            <p className="mt-3 text-sm text-red-400" role="alert">
-              {runError}
-            </p>
-          )}
+          {runError && <p className="mt-3 text-sm text-red-400" role="alert">{runError}</p>}
         </section>
 
-        {/* Estimation history */}
         <section aria-labelledby="estimation-history-heading">
-          <h2
-            id="estimation-history-heading"
-            className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-          >
+          <h2 id="estimation-history-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Estimation History
           </h2>
-
           {estimations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No estimations yet. Run one above to get started.
-            </p>
+            <p className="text-sm text-muted-foreground">No estimations yet. Run one above to get started.</p>
           ) : (
             <ul className="space-y-2">
               {estimations.map((estimation) => (
@@ -292,7 +201,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
             </ul>
           )}
         </section>
-
       </div>
     </main>
   );

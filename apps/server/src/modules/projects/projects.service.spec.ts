@@ -231,6 +231,31 @@ describe('ProjectsService', () => {
       );
     });
 
+    it('switches descriptionJson and nulls descriptionText when inputType changes to structured', async () => {
+      const existing = makeProject({
+        inputType: 'freetext',
+        descriptionText: 'old text',
+        descriptionJson: null,
+      });
+      const updateDto = {
+        inputType: 'structured' as const,
+        descriptionJson: { feature: 'new structured data' },
+      };
+
+      repo.findOneBy.mockResolvedValue(existing);
+      repo.save.mockResolvedValue(makeProject());
+
+      await service.update(existing.id, updateDto as any);
+
+      expect(repo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputType: 'structured',
+          descriptionJson: { feature: 'new structured data' },
+          descriptionText: null,
+        }),
+      );
+    });
+
     it('throws NotFoundException when the target id does not exist', async () => {
       repo.findOneBy.mockResolvedValue(null);
 

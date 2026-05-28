@@ -1,13 +1,3 @@
-/**
- * Central HTTP client for all requests to the NestJS backend.
- *
- * Usage:
- *   import { apiFetch } from '@/lib/api-client';
- *   const projects = await apiFetch<Project[]>('/projects');
- *
- * Never use raw fetch() in page or component files — always go through this module.
- */
-
 import type { Estimation } from '@sce/types';
 
 const API_BASE =
@@ -23,9 +13,6 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Typed fetch wrapper. Throws ApiError on non-2xx responses.
- */
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
@@ -63,10 +50,6 @@ export async function apiFetch<T>(
   return response.json() as Promise<T>;
 }
 
-/**
- * Triggers a new COCOMO II estimation run for the given project.
- * Returns the newly created Estimation record (status will be 'running' initially).
- */
 export async function runEstimation(projectId: string): Promise<Estimation> {
   return apiFetch<Estimation>('/estimations', {
     method: 'POST',
@@ -74,9 +57,6 @@ export async function runEstimation(projectId: string): Promise<Estimation> {
   });
 }
 
-/**
- * Fetches all estimation runs associated with a given project, newest first.
- */
 export async function getEstimationsByProject(
   projectId: string,
 ): Promise<Estimation[]> {
