@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 import { Estimation } from './entities/estimation.entity';
 import { CocomoService } from './cocomo.service';
 import { ProjectsService } from '../projects/projects.service';
+import { LlmService } from '../llm/llm.service';
+import { TextNormalizerService } from '../llm/text-normalizer.service';
+import { SignalsService } from '../signals/signals.service';
 import { NOMINAL_EAF } from '@sce/constants';
 
 @Injectable()
@@ -13,6 +16,9 @@ export class EstimationService {
     private readonly estimationRepo: Repository<Estimation>,
     private readonly cocomoService: CocomoService,
     private readonly projectsService: ProjectsService,
+    private readonly llmService: LlmService,
+    private readonly textNormalizer: TextNormalizerService,
+    private readonly signalsService: SignalsService,
   ) {}
 
   async runEstimation(projectId: string): Promise<Estimation> {
@@ -26,8 +32,22 @@ export class EstimationService {
         project.sizeKloc,
         NOMINAL_EAF,
       );
+
+      const normalizedText = this.textNormalizer.normalize({
+        inputType: project.inputType,
+        descriptionText: project.descriptionText,
+        descriptionJson: project.descriptionJson as Record<string, string> | null,
+      });
+
+      const llmOutput = await this.llmService.extractSignals(normalizedText);
+      const signals = await this.signalsService.createBulk(estimation.id, llmOutput);
+
+      const hybridEffortPm =
+        nominalEffortPm * signals.reduce((product, s) => product * s.adjustmentFactor, 1);
+
       estimation.status = 'completed';
       estimation.nominalEffortPm = nominalEffortPm;
+      estimation.hybridEffortPm = hybridEffortPm;
       estimation.cocomoInputs = cocomoInputs;
     } catch (err) {
       estimation.status = 'failed';
