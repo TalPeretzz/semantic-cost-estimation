@@ -105,6 +105,14 @@ describe('ProjectsController', () => {
 
       expect(service.findAll).toHaveBeenCalledWith(1, 20);
     });
+
+    it('uses default page and limit when params are undefined', async () => {
+      service.findAll.mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 });
+
+      await controller.findAll(undefined as any, undefined as any);
+
+      expect(service.findAll).toHaveBeenCalledWith(1, 20);
+    });
   });
 
   // ---------------------------------------------------------------------------

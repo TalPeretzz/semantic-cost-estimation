@@ -49,8 +49,25 @@
       "^@sce/types$": "<rootDir>/../../../packages/types/dist/index.js",
       "^@sce/constants$": "<rootDir>/../../../packages/constants/dist/index.js"
     },
-    "collectCoverageFrom": ["**/*.(t|j)s"],
+    "collectCoverageFrom": [
+      "**/*.(t|j)s",
+      "!**/main.ts",
+      "!**/*.module.ts",
+      "!**/app.config.ts",
+      "!**/*.spec.ts",
+      "!**/config/env.validation.ts",
+      "!**/common/filters/**",
+      "!**/common/interceptors/**"
+    ],
     "coverageDirectory": "../coverage",
+    "coverageThreshold": {
+      "global": {
+        "lines": 80,
+        "functions": 80,
+        "branches": 80,
+        "statements": 80
+      }
+    },
     "testEnvironment": "node"
   }
 }

@@ -1,15 +1,7 @@
-/**
- * Central HTTP client for all requests to the NestJS backend.
- *
- * Usage:
- *   import { apiFetch } from '@/lib/api-client';
- *   const projects = await apiFetch<Project[]>('/projects');
- *
- * Never use raw fetch() in page or component files — always go through this module.
- */
+import type { Estimation } from '@sce/types';
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export class ApiError extends Error {
   constructor(
@@ -21,9 +13,6 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Typed fetch wrapper. Throws ApiError on non-2xx responses.
- */
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
@@ -59,4 +48,19 @@ export async function apiFetch<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function runEstimation(projectId: string): Promise<Estimation> {
+  return apiFetch<Estimation>('/estimations', {
+    method: 'POST',
+    body: JSON.stringify({ projectId }),
+  });
+}
+
+export async function getEstimationsByProject(
+  projectId: string,
+): Promise<Estimation[]> {
+  return apiFetch<Estimation[]>(
+    `/estimations?projectId=${encodeURIComponent(projectId)}`,
+  );
 }

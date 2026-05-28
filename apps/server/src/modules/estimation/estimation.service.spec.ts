@@ -73,6 +73,40 @@ describe('EstimationService', () => {
 
       await expect(service.runEstimation('nonexistent-id')).rejects.toThrow(NotFoundException);
     });
+
+    it('throws NotFoundException when findOne returns null', async () => {
+      mockProjectsService.findOne.mockResolvedValue(null);
+
+      await expect(service.runEstimation('nonexistent-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('marks estimation as failed when CocomoService throws an Error', async () => {
+      mockProjectsService.findOne.mockResolvedValue(mockProject);
+      mockRepo.create.mockReturnValue({ ...mockEstimation });
+      mockRepo.save
+        .mockResolvedValueOnce({ ...mockEstimation })
+        .mockResolvedValueOnce({ ...mockEstimation, status: 'failed', errorMessage: 'compute error' });
+      mockCocomoService.computeNominalEffort.mockImplementation(() => {
+        throw new Error('compute error');
+      });
+
+      const result = await service.runEstimation('project-uuid');
+      expect(result.status).toBe('failed');
+    });
+
+    it('marks estimation as failed when CocomoService throws a non-Error value', async () => {
+      mockProjectsService.findOne.mockResolvedValue(mockProject);
+      mockRepo.create.mockReturnValue({ ...mockEstimation });
+      mockRepo.save
+        .mockResolvedValueOnce({ ...mockEstimation })
+        .mockResolvedValueOnce({ ...mockEstimation, status: 'failed', errorMessage: 'unknown' });
+      mockCocomoService.computeNominalEffort.mockImplementation(() => {
+        throw 'unknown';
+      });
+
+      const result = await service.runEstimation('project-uuid');
+      expect(result.status).toBe('failed');
+    });
   });
 
   describe('findByProject', () => {
