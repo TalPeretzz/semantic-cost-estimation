@@ -74,12 +74,6 @@ describe('EstimationService', () => {
       await expect(service.runEstimation('nonexistent-id')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException when findOne returns null', async () => {
-      mockProjectsService.findOne.mockResolvedValue(null);
-
-      await expect(service.runEstimation('nonexistent-id')).rejects.toThrow(NotFoundException);
-    });
-
     it('marks estimation as failed when CocomoService throws an Error', async () => {
       mockProjectsService.findOne.mockResolvedValue(mockProject);
       mockRepo.create.mockReturnValue({ ...mockEstimation });
