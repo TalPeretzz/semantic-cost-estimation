@@ -1,6 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
 import { EstimationService } from './estimation.service';
-import { CocomoService } from './cocomo.service';
 
 const mockProject = {
   id: 'project-uuid',
@@ -26,11 +25,11 @@ const mockEstimation = {
 };
 
 const mockSignals = [
-  { signalName: 'functional_complexity', adjustmentFactor: 1.1 },
-  { signalName: 'architectural_complexity', adjustmentFactor: 1.0 },
-  { signalName: 'external_integrations', adjustmentFactor: 0.9 },
-  { signalName: 'requirement_stability', adjustmentFactor: 1.1 },
-  { signalName: 'uncertainty', adjustmentFactor: 0.7 },
+  { signalName: 'functional_complexity', ordinal: 1, adjustmentFactor: 1.1 },
+  { signalName: 'architectural_complexity', ordinal: 0, adjustmentFactor: 1.0 },
+  { signalName: 'external_integrations', ordinal: -1, adjustmentFactor: 0.9 },
+  { signalName: 'requirement_stability', ordinal: 1, adjustmentFactor: 1.1 },
+  { signalName: 'uncertainty', ordinal: -3, adjustmentFactor: 0.7 },
 ];
 
 const mockRepo = {
@@ -44,7 +43,8 @@ const mockProjectsService = { findOne: jest.fn() };
 const mockCocomoService = { computeNominalEffort: jest.fn() };
 const mockLlmService = { extractSignals: jest.fn() };
 const mockTextNormalizer = { normalize: jest.fn() };
-const mockSignalsService = { createBulk: jest.fn() };
+const mockSignalsService = { createBulk: jest.fn(), findByEstimation: jest.fn() };
+const mockAdjustmentService = { compute: jest.fn() };
 
 function makeService() {
   return new EstimationService(
@@ -54,6 +54,7 @@ function makeService() {
     mockLlmService as any,
     mockTextNormalizer as any,
     mockSignalsService as any,
+    mockAdjustmentService as any,
   );
 }
 
@@ -72,7 +73,7 @@ describe('EstimationService', () => {
           ...mockEstimation,
           status: 'completed',
           nominalEffortPm: 37.5,
-          hybridEffortPm: 37.5 * 1.1 * 1.0 * 0.9 * 1.1 * 0.7,
+          hybridEffortPm: 29.0,
         });
       mockCocomoService.computeNominalEffort.mockReturnValue({
         nominalEffortPm: 37.5,
@@ -87,6 +88,11 @@ describe('EstimationService', () => {
         uncertainty: { level: 'very_low', rationale: 'r' },
       });
       mockSignalsService.createBulk.mockResolvedValue(mockSignals);
+      mockAdjustmentService.compute.mockReturnValue({
+        productOfFactors: 0.773,
+        hybridEffortPm: 29.0,
+        perSignalBreakdown: [],
+      });
 
       const service = makeService();
       const result = await service.runEstimation('project-uuid');
@@ -100,6 +106,7 @@ describe('EstimationService', () => {
       });
       expect(mockLlmService.extractSignals).toHaveBeenCalledWith('normalized text');
       expect(mockSignalsService.createBulk).toHaveBeenCalledWith('estimation-uuid', expect.any(Object));
+      expect(mockAdjustmentService.compute).toHaveBeenCalledWith(37.5, mockSignals);
       expect(result.status).toBe('completed');
     });
 
@@ -131,10 +138,7 @@ describe('EstimationService', () => {
       mockRepo.save
         .mockResolvedValueOnce({ ...mockEstimation })
         .mockResolvedValueOnce({ ...mockEstimation, status: 'failed', errorMessage: 'LLM error' });
-      mockCocomoService.computeNominalEffort.mockReturnValue({
-        nominalEffortPm: 37.5,
-        cocomoInputs: {},
-      });
+      mockCocomoService.computeNominalEffort.mockReturnValue({ nominalEffortPm: 37.5, cocomoInputs: {} });
       mockTextNormalizer.normalize.mockReturnValue('text');
       mockLlmService.extractSignals.mockRejectedValue(new Error('LLM error'));
 
@@ -184,6 +188,54 @@ describe('EstimationService', () => {
       mockRepo.findOne.mockResolvedValue(null);
       const service = makeService();
       await expect(service.findOne('nonexistent-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findOneWithDetail', () => {
+    it('returns estimation with signals and adjustmentResult for completed estimation', async () => {
+      const completedEstimation = { ...mockEstimation, status: 'completed' as const, nominalEffortPm: 37.5 };
+      mockRepo.findOne.mockResolvedValue(completedEstimation);
+      mockSignalsService.findByEstimation.mockResolvedValue(mockSignals);
+      const adjustmentResult = { productOfFactors: 0.773, hybridEffortPm: 29.0, perSignalBreakdown: [] };
+      mockAdjustmentService.compute.mockReturnValue(adjustmentResult);
+
+      const service = makeService();
+      const result = await service.findOneWithDetail('estimation-uuid');
+
+      expect(mockSignalsService.findByEstimation).toHaveBeenCalledWith('estimation-uuid');
+      expect(mockAdjustmentService.compute).toHaveBeenCalledWith(37.5, mockSignals);
+      expect(result.signals).toEqual(mockSignals);
+      expect(result.adjustmentResult).toEqual(adjustmentResult);
+    });
+
+    it('returns null adjustmentResult when nominalEffortPm is null', async () => {
+      mockRepo.findOne.mockResolvedValue({ ...mockEstimation, nominalEffortPm: null });
+      mockSignalsService.findByEstimation.mockResolvedValue(mockSignals);
+
+      const service = makeService();
+      const result = await service.findOneWithDetail('estimation-uuid');
+
+      expect(mockAdjustmentService.compute).not.toHaveBeenCalled();
+      expect(result.adjustmentResult).toBeNull();
+    });
+
+    it('returns null adjustmentResult when signals are empty', async () => {
+      const completedEstimation = { ...mockEstimation, nominalEffortPm: 37.5 };
+      mockRepo.findOne.mockResolvedValue(completedEstimation);
+      mockSignalsService.findByEstimation.mockResolvedValue([]);
+
+      const service = makeService();
+      const result = await service.findOneWithDetail('estimation-uuid');
+
+      expect(mockAdjustmentService.compute).not.toHaveBeenCalled();
+      expect(result.adjustmentResult).toBeNull();
+    });
+
+    it('propagates NotFoundException from findOne', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+
+      const service = makeService();
+      await expect(service.findOneWithDetail('bad-id')).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -14,6 +14,7 @@ const mockEstimationService = {
   runEstimation: jest.fn(),
   findByProject: jest.fn(),
   findOne: jest.fn(),
+  findOneWithDetail: jest.fn(),
 };
 
 describe('EstimationController', () => {
@@ -53,17 +54,18 @@ describe('EstimationController', () => {
   });
 
   describe('findOne', () => {
-    it('delegates to findOne with id param', async () => {
-      mockEstimationService.findOne.mockResolvedValue(mockEstimation);
+    it('delegates to findOneWithDetail with id param', async () => {
+      const detail = { ...mockEstimation, signals: [], adjustmentResult: null };
+      mockEstimationService.findOneWithDetail.mockResolvedValue(detail);
 
       const result = await controller.findOne('estimation-uuid');
 
-      expect(mockEstimationService.findOne).toHaveBeenCalledWith('estimation-uuid');
-      expect(result).toEqual(mockEstimation);
+      expect(mockEstimationService.findOneWithDetail).toHaveBeenCalledWith('estimation-uuid');
+      expect(result).toEqual(detail);
     });
 
     it('propagates NotFoundException from service', async () => {
-      mockEstimationService.findOne.mockRejectedValue(new NotFoundException());
+      mockEstimationService.findOneWithDetail.mockRejectedValue(new NotFoundException());
 
       await expect(controller.findOne('bad-id')).rejects.toThrow(NotFoundException);
     });
