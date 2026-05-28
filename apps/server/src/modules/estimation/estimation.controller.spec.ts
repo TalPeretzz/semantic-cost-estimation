@@ -27,36 +27,44 @@ describe('EstimationController', () => {
   describe('run', () => {
     it('delegates to runEstimation with projectId', async () => {
       mockEstimationService.runEstimation.mockResolvedValue(mockEstimation);
+
       const result = await controller.run({ projectId: 'project-uuid' });
+
       expect(mockEstimationService.runEstimation).toHaveBeenCalledWith('project-uuid');
       expect(result).toEqual(mockEstimation);
     });
 
     it('propagates NotFoundException from service', async () => {
       mockEstimationService.runEstimation.mockRejectedValue(new NotFoundException());
+
       await expect(controller.run({ projectId: 'bad-uuid' })).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('findByProject', () => {
-    it('delegates to findByProject with projectId query param', async () => {
+    it('delegates to findByProject with projectId from query', async () => {
       mockEstimationService.findByProject.mockResolvedValue([mockEstimation]);
-      const result = await controller.findByProject('project-uuid');
+
+      const result = await controller.findByProject({ projectId: 'project-uuid' });
+
       expect(mockEstimationService.findByProject).toHaveBeenCalledWith('project-uuid');
       expect(result).toHaveLength(1);
     });
   });
 
   describe('findOne', () => {
-    it('returns estimation by id', async () => {
+    it('delegates to findOne with id param', async () => {
       mockEstimationService.findOne.mockResolvedValue(mockEstimation);
+
       const result = await controller.findOne('estimation-uuid');
+
       expect(mockEstimationService.findOne).toHaveBeenCalledWith('estimation-uuid');
       expect(result).toEqual(mockEstimation);
     });
 
     it('propagates NotFoundException from service', async () => {
       mockEstimationService.findOne.mockRejectedValue(new NotFoundException());
+
       await expect(controller.findOne('bad-id')).rejects.toThrow(NotFoundException);
     });
   });

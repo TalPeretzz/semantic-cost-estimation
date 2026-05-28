@@ -17,9 +17,6 @@ export class EstimationService {
 
   async runEstimation(projectId: string): Promise<Estimation> {
     const project = await this.projectsService.findOne(projectId);
-    if (!project) {
-      throw new NotFoundException(`Project ${projectId} not found`);
-    }
 
     const estimation = this.estimationRepo.create({ projectId, status: 'running' });
     await this.estimationRepo.save(estimation);

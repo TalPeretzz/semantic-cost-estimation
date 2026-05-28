@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Param, Query, Body } from '@nestjs/common';
 import { EstimationService } from './estimation.service';
 import { RunEstimationDto } from './dto/run-estimation.dto';
+import { GetEstimationsDto } from './dto/get-estimations.dto';
 
 @Controller('estimations')
 export class EstimationController {
@@ -12,8 +13,8 @@ export class EstimationController {
   }
 
   @Get()
-  findByProject(@Query('projectId') projectId: string) {
-    return this.estimationService.findByProject(projectId);
+  findByProject(@Query() query: GetEstimationsDto) {
+    return this.estimationService.findByProject(query.projectId);
   }
 
   @Get(':id')

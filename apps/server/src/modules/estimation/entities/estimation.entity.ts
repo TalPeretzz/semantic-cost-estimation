@@ -27,9 +27,6 @@ export class Estimation {
   @CreateDateColumn()
   runAt!: Date;
 
-  @CreateDateColumn()
-  createdAt!: Date;
-
   @UpdateDateColumn()
   updatedAt!: Date;
 }

@@ -24,10 +24,10 @@ export interface Estimation {
   projectId: string;
   runAt: string;
   status: EstimationStatus;
-  cocomoInputs: CocomoInputs;
-  nominalEffortPm: number;
-  hybridEffortPm: number;
+  cocomoInputs: Record<string, unknown> | null;
+  nominalEffortPm: number | null;
+  hybridEffortPm: number | null;
   errorMessage: string | null;
   signals: Signal[];
-  adjustmentResult: AdjustmentResult;
+  adjustmentResult: AdjustmentResult | null;
 }
