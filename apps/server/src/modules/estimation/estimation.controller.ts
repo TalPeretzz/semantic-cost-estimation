@@ -19,6 +19,6 @@ export class EstimationController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.estimationService.findOne(id);
+    return this.estimationService.findOneWithDetail(id);
   }
 }

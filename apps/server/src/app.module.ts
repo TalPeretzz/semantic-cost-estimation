@@ -7,6 +7,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { EstimationModule } from './modules/estimation/estimation.module';
 import { LlmModule } from './modules/llm/llm.module';
 import { SignalsModule } from './modules/signals/signals.module';
+import { AdjustmentModule } from './modules/adjustment/adjustment.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SignalsModule } from './modules/signals/signals.module';
     EstimationModule,
     LlmModule,
     SignalsModule,
+    AdjustmentModule,
   ],
 })
 export class AppModule {}

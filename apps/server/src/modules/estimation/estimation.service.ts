@@ -7,7 +7,14 @@ import { ProjectsService } from '../projects/projects.service';
 import { LlmService } from '../llm/llm.service';
 import { TextNormalizerService } from '../llm/text-normalizer.service';
 import { SignalsService } from '../signals/signals.service';
+import { AdjustmentService, AdjustmentResult } from '../adjustment/adjustment.service';
+import { Signal } from '../signals/entities/signal.entity';
 import { NOMINAL_EAF } from '@sce/constants';
+
+export interface EstimationDetail extends Estimation {
+  signals: Signal[];
+  adjustmentResult: AdjustmentResult | null;
+}
 
 @Injectable()
 export class EstimationService {
@@ -19,6 +26,7 @@ export class EstimationService {
     private readonly llmService: LlmService,
     private readonly textNormalizer: TextNormalizerService,
     private readonly signalsService: SignalsService,
+    private readonly adjustmentService: AdjustmentService,
   ) {}
 
   async runEstimation(projectId: string): Promise<Estimation> {
@@ -42,8 +50,7 @@ export class EstimationService {
       const llmOutput = await this.llmService.extractSignals(normalizedText);
       const signals = await this.signalsService.createBulk(estimation.id, llmOutput);
 
-      const hybridEffortPm =
-        nominalEffortPm * signals.reduce((product, s) => product * s.adjustmentFactor, 1);
+      const { hybridEffortPm } = this.adjustmentService.compute(nominalEffortPm, signals);
 
       estimation.status = 'completed';
       estimation.nominalEffortPm = nominalEffortPm;
@@ -70,5 +77,17 @@ export class EstimationService {
       throw new NotFoundException(`Estimation ${id} not found`);
     }
     return estimation;
+  }
+
+  async findOneWithDetail(id: string): Promise<EstimationDetail> {
+    const estimation = await this.findOne(id);
+    const signals = await this.signalsService.findByEstimation(id);
+
+    const adjustmentResult =
+      estimation.nominalEffortPm !== null && signals.length > 0
+        ? this.adjustmentService.compute(estimation.nominalEffortPm, signals)
+        : null;
+
+    return { ...estimation, signals, adjustmentResult };
   }
 }
