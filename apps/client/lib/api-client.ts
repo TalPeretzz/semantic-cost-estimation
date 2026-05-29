@@ -64,3 +64,7 @@ export async function getEstimationsByProject(
     `/estimations?projectId=${encodeURIComponent(projectId)}`,
   );
 }
+
+export async function getEstimationDetail(id: string): Promise<Estimation> {
+  return apiFetch<Estimation>(`/estimations/${encodeURIComponent(id)}`);
+}
