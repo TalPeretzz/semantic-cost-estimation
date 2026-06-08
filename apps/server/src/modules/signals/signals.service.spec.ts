@@ -2,11 +2,16 @@ import { SignalsService } from './signals.service';
 import { OrdinalMappingService } from './ordinal-mapping.service';
 
 const validLlmOutput = {
-  functional_complexity: { level: 'high' as const, rationale: 'Complex logic.' },
-  architectural_complexity: { level: 'medium' as const, rationale: 'Standard layers.' },
-  external_integrations: { level: 'low' as const, rationale: 'Few APIs.' },
-  requirement_stability: { level: 'high' as const, rationale: 'Stable reqs.' },
-  uncertainty: { level: 'very_low' as const, rationale: 'Well known domain.' },
+  functional_complexity:    { level: 'high' as const,     rationale: 'Complex logic.' },
+  architectural_complexity: { level: 'medium' as const,   rationale: 'Standard layers.' },
+  external_integrations:    { level: 'low' as const,      rationale: 'Few APIs.' },
+  requirement_stability:    { level: 'high' as const,     rationale: 'Stable reqs.' },
+  uncertainty:              { level: 'very_low' as const, rationale: 'Well known domain.' },
+  precedentedness:          { level: 'medium' as const,   rationale: 'Some prior experience.' },
+  development_flexibility:  { level: 'medium' as const,   rationale: 'Normal flexibility.' },
+  architecture_risk:        { level: 'medium' as const,   rationale: 'Architecture reasonably resolved.' },
+  team_cohesion:            { level: 'medium' as const,   rationale: 'Standard team.' },
+  process_maturity:         { level: 'medium' as const,   rationale: 'Defined process.' },
 };
 
 const mockRepo = {
@@ -26,7 +31,7 @@ describe('SignalsService', () => {
 
   describe('createBulk', () => {
     it('saves exactly 5 signal records', async () => {
-      const saved = Object.values(validLlmOutput).map((_, i) => ({ id: `sig-${i}` }));
+      const saved = Array.from({ length: 5 }, (_, i) => ({ id: `sig-${i}` }));
       mockRepo.save.mockResolvedValue(saved);
 
       const result = await service.createBulk('estimation-uuid', validLlmOutput);

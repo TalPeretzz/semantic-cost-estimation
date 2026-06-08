@@ -14,3 +14,21 @@ export const SCALE_EXPONENT_FACTOR = 0.01;
 
 // Default nominal EAF (all effort multipliers at nominal = 1.0)
 export const NOMINAL_EAF = 1.0;
+
+// Maps LLM level strings to COCOMO II scale factor table keys
+export const LEVEL_TO_SF_KEY = {
+  very_low: 'VL',
+  low:      'L',
+  medium:   'N',
+  high:     'H',
+  very_high: 'VH',
+} as const;
+
+// Maps scale factor signal names to their COCOMO II SF table keys
+export const SF_SIGNAL_TO_KEY = {
+  precedentedness:        'PREC',
+  development_flexibility: 'FLEX',
+  architecture_risk:      'RESL',
+  team_cohesion:          'TEAM',
+  process_maturity:       'PMAT',
+} as const;

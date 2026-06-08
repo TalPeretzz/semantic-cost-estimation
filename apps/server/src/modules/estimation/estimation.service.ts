@@ -37,11 +37,6 @@ export class EstimationService {
     await this.estimationRepo.save(estimation);
 
     try {
-      const { nominalEffortPm, cocomoInputs } = this.cocomoService.computeNominalEffort(
-        project.sizeKloc,
-        NOMINAL_EAF,
-      );
-
       const normalizedText = this.textNormalizer.normalize({
         inputType: project.inputType,
         descriptionText: project.descriptionText,
@@ -49,8 +44,20 @@ export class EstimationService {
       });
 
       const llmOutput = await this.llmService.extractSignals(normalizedText);
-      const signals = await this.signalsService.createBulk(estimation.id, llmOutput);
 
+      const { nominalEffortPm, cocomoInputs } = this.cocomoService.computeNominalEffort(
+        project.sizeKloc,
+        NOMINAL_EAF,
+        {
+          precedentedness:         llmOutput.precedentedness,
+          development_flexibility: llmOutput.development_flexibility,
+          architecture_risk:       llmOutput.architecture_risk,
+          team_cohesion:           llmOutput.team_cohesion,
+          process_maturity:        llmOutput.process_maturity,
+        },
+      );
+
+      const signals = await this.signalsService.createBulk(estimation.id, llmOutput);
       const { hybridEffortPm } = this.adjustmentService.compute(nominalEffortPm, signals);
 
       estimation.status = 'completed';
