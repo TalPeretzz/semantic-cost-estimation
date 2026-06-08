@@ -1,4 +1,4 @@
-import type { Estimation } from '@sce/types';
+import type { Estimation, EvaluationRun, ImportResult } from '@sce/types';
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -67,4 +67,38 @@ export async function getEstimationsByProject(
 
 export async function getEstimationDetail(id: string): Promise<Estimation> {
   return apiFetch<Estimation>(`/estimations/${encodeURIComponent(id)}`);
+}
+
+export async function runEvaluation(
+  name: string,
+  projectIds: string[],
+): Promise<EvaluationRun> {
+  return apiFetch<EvaluationRun>('/evaluations', {
+    method: 'POST',
+    body: JSON.stringify({ name, projectIds }),
+  });
+}
+
+export async function getEvaluations(): Promise<EvaluationRun[]> {
+  return apiFetch<EvaluationRun[]>('/evaluations');
+}
+
+export async function getEvaluationDetail(id: string): Promise<EvaluationRun> {
+  return apiFetch<EvaluationRun>(`/evaluations/${encodeURIComponent(id)}`);
+}
+
+export async function importDataset(file: File): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const url = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/datasets/import`;
+  const response = await fetch(url, { method: 'POST', body: formData });
+  if (!response.ok) {
+    let message = `Request failed: ${response.status} ${response.statusText}`;
+    try {
+      const body = (await response.json()) as { message?: string };
+      if (typeof body.message === 'string') message = body.message;
+    } catch { /* keep default */ }
+    throw new ApiError(response.status, message);
+  }
+  return response.json() as Promise<ImportResult>;
 }

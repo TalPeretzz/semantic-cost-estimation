@@ -10,8 +10,12 @@ export interface EvaluationRun {
   runAt: string;
   sampleSize: number;
   projectIds: string[];
-  baseline: ErrorMetrics;
-  hybrid: ErrorMetrics;
+  baselineMae: number;
+  baselineRmse: number;
+  baselineMape: number;
+  hybridMae: number;
+  hybridRmse: number;
+  hybridMape: number;
 }
 
 export interface PerProjectEvaluationRow {
