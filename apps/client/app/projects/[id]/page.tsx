@@ -30,8 +30,8 @@ function EstimationRow({ estimation }: { estimation: Estimation }) {
     hour: '2-digit', minute: '2-digit',
   });
 
-  return (
-    <li className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+  const content = (
+    <div className="flex items-center justify-between gap-4 w-full">
       <div className="flex flex-col gap-0.5">
         <span className="text-muted-foreground">{runDate}</span>
         {estimation.status === 'failed' && estimation.errorMessage && (
@@ -39,14 +39,36 @@ function EstimationRow({ estimation }: { estimation: Estimation }) {
         )}
       </div>
       <div className="flex items-center gap-4">
-        {estimation.status === 'completed' && estimation.nominalEffortPm != null && (
+        {estimation.status === 'completed' && estimation.hybridEffortPm != null && (
           <span className="font-medium text-foreground">
-            {estimation.nominalEffortPm.toFixed(1)}{' '}
+            {estimation.hybridEffortPm.toFixed(1)}{' '}
             <span className="text-muted-foreground font-normal">person-months</span>
           </span>
         )}
         <StatusBadge status={estimation.status} />
+        {estimation.status === 'completed' && (
+          <span className="text-xs text-muted-foreground">View &rarr;</span>
+        )}
       </div>
+    </div>
+  );
+
+  if (estimation.status === 'completed') {
+    return (
+      <li>
+        <Link
+          href={`/estimation/${estimation.id}`}
+          className="flex items-center rounded-lg border border-border bg-muted px-4 py-3 text-sm transition-colors hover:border-accent hover:bg-accent/10"
+        >
+          {content}
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+      {content}
     </li>
   );
 }
