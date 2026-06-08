@@ -8,6 +8,8 @@ import { EstimationModule } from './modules/estimation/estimation.module';
 import { LlmModule } from './modules/llm/llm.module';
 import { SignalsModule } from './modules/signals/signals.module';
 import { AdjustmentModule } from './modules/adjustment/adjustment.module';
+import { EvaluationModule } from './modules/evaluation/evaluation.module';
+import { DatasetModule } from './modules/dataset/dataset.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { AdjustmentModule } from './modules/adjustment/adjustment.module';
     LlmModule,
     SignalsModule,
     AdjustmentModule,
+    EvaluationModule,
+    DatasetModule,
   ],
 })
 export class AppModule {}
