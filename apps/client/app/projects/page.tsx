@@ -79,7 +79,7 @@ export default function ProjectsPage() {
         {loading && <ProjectListSkeleton />}
 
         {!loading && error && (
-          <p className="text-sm text-red-400" role="alert">{error}</p>
+          <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
         )}
 
         {!loading && !error && projects.length === 0 && (

@@ -26,50 +26,74 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 function factorStyle(factor: number): string {
-  if (factor < 1) return 'text-green-400';
-  if (factor > 1) return 'text-red-400';
+  if (factor < 1) return 'text-blue-600 dark:text-blue-400';
+  if (factor > 1) return 'text-orange-600 dark:text-orange-400';
   return 'text-muted-foreground';
 }
 
 function factorBadgeStyle(factor: number): string {
-  if (factor < 1) return 'bg-green-900 text-green-300 border border-green-700';
-  if (factor > 1) return 'bg-red-900 text-red-300 border border-red-700';
-  return 'bg-gray-800 text-gray-400 border border-gray-600';
+  if (factor > 1) return 'bg-green-500 text-white';
+  if (factor < 1) return 'bg-red-500 text-white';
+  return 'bg-gray-400 text-white';
 }
 
-function EffortBar({ nominal, hybrid }: { nominal: number; hybrid: number }) {
-  const max = Math.max(nominal, hybrid) * 1.15;
-  const nominalPct = (nominal / max) * 100;
-  const hybridPct = (hybrid / max) * 100;
+function EffortBar({ nominal, hybrid, actual }: { nominal: number; hybrid: number; actual?: number | null }) {
+  const max = Math.max(nominal, hybrid, actual ?? 0) * 1.15;
+  const nominalPct  = (nominal / max) * 100;
+  const hybridPct   = (hybrid / max) * 100;
+  const actualPct   = actual != null ? (actual / max) * 100 : null;
+
+  // Colour the hybrid bar by accuracy, not direction
+  const hybridIsCloser = actual != null
+    ? Math.abs(hybrid - actual) < Math.abs(nominal - actual)
+    : null;
+  const hybridBarClass =
+    hybridIsCloser === true  ? 'bg-green-500' :
+    hybridIsCloser === false ? 'bg-red-500'   :
+    hybrid <= nominal        ? 'bg-green-500' : 'bg-red-500';
+
+  const hybridLabelClass =
+    hybridIsCloser === true  ? 'text-green-600 dark:text-green-400' :
+    hybridIsCloser === false ? 'text-red-600 dark:text-red-400'     :
+    factorStyle(hybrid / nominal);
 
   return (
     <div className="space-y-3">
+      {/* COCOMO baseline */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">COCOMO Baseline</span>
           <span className="font-medium text-foreground">{nominal.toFixed(1)} PM</span>
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-blue-500 transition-all duration-500"
-            style={{ width: `${nominalPct}%` }}
-          />
+          <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${nominalPct}%` }} />
         </div>
       </div>
+
+      {/* Hybrid */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Hybrid (LLM-adjusted)</span>
-          <span className={`font-medium ${factorStyle(hybrid / nominal)}`}>
-            {hybrid.toFixed(1)} PM
-          </span>
+          <span className={`font-medium ${hybridLabelClass}`}>{hybrid.toFixed(1)} PM</span>
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${hybrid <= nominal ? 'bg-green-500' : 'bg-red-500'}`}
-            style={{ width: `${hybridPct}%` }}
-          />
+          <div className={`h-full rounded-full transition-all duration-500 ${hybridBarClass}`} style={{ width: `${hybridPct}%` }} />
         </div>
       </div>
+
+      {/* Actual — only shown when available */}
+      {actualPct != null && actual != null && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Actual Effort</span>
+            <span className="font-medium text-yellow-600 dark:text-yellow-400">{actual.toFixed(1)} PM</span>
+          </div>
+          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-yellow-400 transition-all duration-500" style={{ width: `${actualPct}%` }} />
+          </div>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground">
         {hybrid < nominal
           ? `LLM signals reduce effort by ${((1 - hybrid / nominal) * 100).toFixed(1)}%`
@@ -77,6 +101,68 @@ function EffortBar({ nominal, hybrid }: { nominal: number; hybrid: number }) {
           ? `LLM signals increase effort by ${((hybrid / nominal - 1) * 100).toFixed(1)}%`
           : 'LLM signals have no net effect on effort'}
       </p>
+    </div>
+  );
+}
+
+function AccuracyPanel({ nominal, hybrid, actual }: { nominal: number; hybrid: number; actual: number }) {
+  const baselineErr = Math.abs(nominal - actual);
+  const hybridErr   = Math.abs(hybrid  - actual);
+  const baselinePct = (baselineErr / actual) * 100;
+  const hybridPct   = (hybridErr  / actual) * 100;
+  const improvement = baselinePct - hybridPct;
+  const hybridWins  = hybridErr < baselineErr;
+
+  // Bar widths relative to whichever error is larger
+  const maxErr     = Math.max(baselineErr, hybridErr);
+  const baseBarPct = (baselineErr / maxErr) * 100;
+  const hybarPct   = (hybridErr  / maxErr) * 100;
+
+  return (
+    <div className={`rounded-lg border px-5 py-4 space-y-4 ${hybridWins ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' : 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20'}`}>
+      {/* headline */}
+      <div className="flex items-center gap-3">
+        <span className={`text-2xl font-bold ${hybridWins ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+          {hybridWins ? '▲' : '▼'}
+        </span>
+        <div>
+          <p className="font-semibold text-foreground">
+            {hybridWins
+              ? `Hybrid is ${improvement.toFixed(1)} pp more accurate than COCOMO`
+              : `COCOMO is ${Math.abs(improvement).toFixed(1)} pp more accurate than Hybrid`}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Actual effort: <span className="text-yellow-600 dark:text-yellow-400 font-medium tabular-nums">{actual.toFixed(1)} PM</span>
+          </p>
+        </div>
+      </div>
+
+      {/* error comparison bars */}
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>COCOMO absolute error</span>
+            <span className="font-medium text-foreground tabular-nums">{baselineErr.toFixed(1)} PM &nbsp;({baselinePct.toFixed(1)}%)</span>
+          </div>
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-blue-500/70 transition-all duration-500" style={{ width: `${baseBarPct}%` }} />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Hybrid absolute error</span>
+            <span className={`font-medium tabular-nums ${hybridWins ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'}`}>
+              {hybridErr.toFixed(1)} PM &nbsp;({hybridPct.toFixed(1)}%)
+            </span>
+          </div>
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${hybridWins ? 'bg-green-500' : 'bg-red-500'}`}
+              style={{ width: `${hybarPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -110,22 +196,22 @@ function FormulaTrace({ estimation }: { estimation: Estimation }) {
   const { perSignalBreakdown, productOfFactors } = adjustmentResult;
 
   return (
-    <div className="rounded-lg border border-border bg-muted px-5 py-4 font-mono text-sm space-y-2">
+    <div className="rounded-lg border border-border bg-muted px-5 py-4 font-mono text-sm leading-6 space-y-2">
       <p className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Formula Trace</p>
-      <p className="text-foreground">
-        E<sub>nom</sub> = <span className="text-blue-400">{nominalEffortPm.toFixed(2)}</span> PM
+      <p className="text-foreground tabular-nums">
+        E<sub>nom</sub> = <span className="text-blue-600 dark:text-blue-400">{nominalEffortPm.toFixed(2)}</span> PM
       </p>
       {perSignalBreakdown.map((s) => (
-        <p key={s.signalName} className="text-foreground">
+        <p key={s.signalName} className="text-foreground tabular-nums">
           A<sub>{SIGNAL_LABELS[s.signalName]?.split(' ')[0]}</sub>{' '}
           = 1 + ({s.ordinal > 0 ? `+${s.ordinal}` : s.ordinal} × 0.1){' '}
           = <span className={factorStyle(s.factor)}>{s.factor.toFixed(2)}</span>
         </p>
       ))}
-      <p className="text-foreground border-t border-border pt-2 mt-2">
+      <p className="text-foreground border-t border-border pt-2 mt-2 tabular-nums">
         ∏ A<sub>i</sub> = <span className={factorStyle(productOfFactors)}>{productOfFactors.toFixed(4)}</span>
       </p>
-      <p className="text-foreground font-semibold">
+      <p className="text-foreground font-semibold tabular-nums">
         E<sub>final</sub> = {nominalEffortPm.toFixed(2)} × {productOfFactors.toFixed(4)}{' '}
         = <span className={factorStyle(hybridEffortPm / nominalEffortPm)}>{hybridEffortPm.toFixed(2)}</span> PM
       </p>
@@ -220,8 +306,25 @@ export default function EstimationDetailPage({ params }: PageProps) {
               <EffortBar
                 nominal={estimation.nominalEffortPm}
                 hybrid={estimation.hybridEffortPm}
+                actual={estimation.actualEffortPm}
               />
             </div>
+          </section>
+        )}
+
+        {isCompleted &&
+          estimation.nominalEffortPm != null &&
+          estimation.hybridEffortPm != null &&
+          estimation.actualEffortPm != null && (
+          <section aria-labelledby="accuracy-heading">
+            <h2 id="accuracy-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Accuracy vs Actual
+            </h2>
+            <AccuracyPanel
+              nominal={estimation.nominalEffortPm}
+              hybrid={estimation.hybridEffortPm}
+              actual={estimation.actualEffortPm}
+            />
           </section>
         )}
 
@@ -258,7 +361,7 @@ export default function EstimationDetailPage({ params }: PageProps) {
                           {signal.adjustmentFactor > 1 ? '+' : ''}{((signal.adjustmentFactor - 1) * 100).toFixed(0)}%
                         </span>
                       </td>
-                      <td className="py-3 text-xs text-muted-foreground">{signal.llmRationale}</td>
+                      <td className="py-3 text-sm leading-relaxed text-muted-foreground">{signal.llmRationale}</td>
                     </tr>
                   ))}
                 </tbody>

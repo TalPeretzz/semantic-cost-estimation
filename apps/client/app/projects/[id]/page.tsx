@@ -12,10 +12,10 @@ interface PageProps {
 }
 
 const STATUS_STYLES: Record<EstimationStatus, string> = {
-  completed: 'bg-green-900 text-green-300 border border-green-700',
-  running:   'bg-yellow-900 text-yellow-300 border border-yellow-700',
-  failed:    'bg-red-900   text-red-300   border border-red-700',
-  pending:   'bg-gray-800  text-gray-400  border border-gray-600',
+  completed: 'bg-green-100 text-green-700 border border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700',
+  running:   'bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700',
+  failed:    'bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700',
+  pending:   'bg-gray-100 text-gray-600 border border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600',
 };
 
 function StatusBadge({ status }: { status: EstimationStatus }) {
