@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { apiFetch, runEstimation, getEstimationsByProject, ApiError } from '@/lib/api-client';
+import { EstimationLoaderModal } from '@/components/EstimationLoaderModal';
 import type { Estimation, EstimationStatus, Project } from '@sce/types';
 
 interface PageProps {
@@ -84,13 +86,14 @@ function Field({ label, value }: { label: string; value: string | number }) {
 
 export default function ProjectDetailPage({ params }: PageProps) {
   const { id } = params;
+  const router = useRouter();
 
   const [project, setProject]         = useState<Project | null>(null);
   const [estimations, setEstimations] = useState<Estimation[]>([]);
   const [loadingPage, setLoadingPage] = useState(true);
   const [pageError, setPageError]     = useState<string | null>(null);
-  const [running, setRunning]         = useState(false);
-  const [runError, setRunError]       = useState<string | null>(null);
+  const [modalOpen, setModalOpen]     = useState(false);
+  const [modalError, setModalError]   = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoadingPage(true);
@@ -116,19 +119,17 @@ export default function ProjectDetailPage({ params }: PageProps) {
   useEffect(() => { loadData(); }, [loadData]);
 
   async function handleRunEstimation() {
-    setRunning(true);
-    setRunError(null);
+    setModalError(null);
+    setModalOpen(true);
     try {
-      await runEstimation(id);
-      setEstimations(await getEstimationsByProject(id));
+      const estimation = await runEstimation(id);
+      router.push(`/estimation/${estimation.id}`);
     } catch (err) {
-      setRunError(
+      setModalError(
         err instanceof ApiError
           ? err.message
           : 'Failed to start estimation. Please try again.',
       );
-    } finally {
-      setRunning(false);
     }
   }
 
@@ -201,12 +202,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <button
             type="button"
             onClick={handleRunEstimation}
-            disabled={running}
+            disabled={modalOpen}
             className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {running ? 'Running...' : 'Run Estimation'}
+            Run Estimation
           </button>
-          {runError && <p className="mt-3 text-sm text-red-400" role="alert">{runError}</p>}
         </section>
 
         <section aria-labelledby="estimation-history-heading">
@@ -224,6 +224,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
           )}
         </section>
       </div>
+
+      <EstimationLoaderModal
+        isOpen={modalOpen}
+        error={modalError}
+        onDismissError={() => { setModalOpen(false); setModalError(null); }}
+      />
     </main>
   );
 }
