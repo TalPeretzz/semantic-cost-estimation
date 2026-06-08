@@ -81,11 +81,16 @@ describe('EstimationService', () => {
       });
       mockTextNormalizer.normalize.mockReturnValue('normalized text');
       mockLlmService.extractSignals.mockResolvedValue({
-        functional_complexity: { level: 'high', rationale: 'r' },
+        functional_complexity:    { level: 'high',   rationale: 'r' },
         architectural_complexity: { level: 'medium', rationale: 'r' },
-        external_integrations: { level: 'low', rationale: 'r' },
-        requirement_stability: { level: 'high', rationale: 'r' },
-        uncertainty: { level: 'very_low', rationale: 'r' },
+        external_integrations:    { level: 'low',    rationale: 'r' },
+        requirement_stability:    { level: 'high',   rationale: 'r' },
+        uncertainty:              { level: 'very_low', rationale: 'r' },
+        precedentedness:          { level: 'medium', rationale: 'r' },
+        development_flexibility:  { level: 'medium', rationale: 'r' },
+        architecture_risk:        { level: 'medium', rationale: 'r' },
+        team_cohesion:            { level: 'medium', rationale: 'r' },
+        process_maturity:         { level: 'medium', rationale: 'r' },
       });
       mockSignalsService.createBulk.mockResolvedValue(mockSignals);
       mockAdjustmentService.compute.mockReturnValue({
@@ -98,7 +103,9 @@ describe('EstimationService', () => {
       const result = await service.runEstimation('project-uuid');
 
       expect(mockRepo.create).toHaveBeenCalledWith({ projectId: 'project-uuid', status: 'running' });
-      expect(mockCocomoService.computeNominalEffort).toHaveBeenCalledWith(10, 1.0);
+      expect(mockCocomoService.computeNominalEffort).toHaveBeenCalledWith(
+        10, 1.0, expect.objectContaining({ precedentedness: expect.any(Object) }),
+      );
       expect(mockTextNormalizer.normalize).toHaveBeenCalledWith({
         inputType: 'freetext',
         descriptionText: 'A test project description',

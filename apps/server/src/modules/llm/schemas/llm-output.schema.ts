@@ -7,11 +7,20 @@ const entrySchema = z.object({
 });
 
 export const llmOutputSchema = z.object({
-  functional_complexity: entrySchema,
+  // Adjustment signals — map to ordinal factors applied to E_nom
+  functional_complexity:    entrySchema,
   architectural_complexity: entrySchema,
-  external_integrations: entrySchema,
-  requirement_stability: entrySchema,
-  uncertainty: entrySchema,
+  external_integrations:    entrySchema,
+  requirement_stability:    entrySchema,
+  uncertainty:              entrySchema,
+
+  // Scale factor signals — map to COCOMO II SF values that determine exponent B
+  // Higher level = more favorable condition = lower SF value = lower B
+  precedentedness:          entrySchema,
+  development_flexibility:  entrySchema,
+  architecture_risk:        entrySchema,
+  team_cohesion:            entrySchema,
+  process_maturity:         entrySchema,
 });
 
 export type LlmOutput = z.infer<typeof llmOutputSchema>;

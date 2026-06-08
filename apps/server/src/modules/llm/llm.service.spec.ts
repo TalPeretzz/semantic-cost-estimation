@@ -3,11 +3,16 @@ import { LlmPromptBuilder } from './llm-prompt.builder';
 import { LlmUnavailableException } from './exceptions/llm-unavailable.exception';
 
 const validLlmResponse = {
-  functional_complexity: { level: 'high', rationale: 'Complex business logic.' },
+  functional_complexity:    { level: 'high',   rationale: 'Complex business logic.' },
   architectural_complexity: { level: 'medium', rationale: 'Standard layered architecture.' },
-  external_integrations: { level: 'low', rationale: 'Few external APIs.' },
-  requirement_stability: { level: 'high', rationale: 'Requirements are well defined.' },
-  uncertainty: { level: 'low', rationale: 'Team has prior experience.' },
+  external_integrations:    { level: 'low',    rationale: 'Few external APIs.' },
+  requirement_stability:    { level: 'high',   rationale: 'Requirements are well defined.' },
+  uncertainty:              { level: 'low',    rationale: 'Team has prior experience.' },
+  precedentedness:          { level: 'medium', rationale: 'Some prior experience.' },
+  development_flexibility:  { level: 'medium', rationale: 'Normal flexibility.' },
+  architecture_risk:        { level: 'medium', rationale: 'Architecture reasonably resolved.' },
+  team_cohesion:            { level: 'medium', rationale: 'Standard team.' },
+  process_maturity:         { level: 'medium', rationale: 'Defined process.' },
 };
 
 function makeTextContent(text: string) {
