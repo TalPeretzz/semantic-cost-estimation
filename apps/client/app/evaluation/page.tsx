@@ -18,18 +18,18 @@ interface EvaluationDetail extends EvaluationRun {
 function MetricCell({ value, compareValue }: { value: number; compareValue: number }) {
   const better = value < compareValue;
   const worse = value > compareValue;
-  const cls = better ? 'text-green-400' : worse ? 'text-red-400' : 'text-foreground';
+  const cls = better ? 'text-green-600 dark:text-green-400' : worse ? 'text-red-600 dark:text-red-400' : 'text-foreground';
   return <span className={`font-medium ${cls}`}>{value.toFixed(2)}</span>;
 }
 
 function ImprovementBadge({ baseline, hybrid }: { baseline: number; hybrid: number }) {
   const pct = ((baseline - hybrid) / baseline) * 100;
   if (Math.abs(pct) < 0.5) {
-    return <span className="rounded px-2 py-0.5 text-xs bg-gray-800 text-gray-400 border border-gray-600">No change</span>;
+    return <span className="rounded px-2 py-0.5 text-xs bg-gray-100 text-gray-600 border border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600">No change</span>;
   }
   const improved = pct > 0;
   return (
-    <span className={`rounded px-2 py-0.5 text-xs font-medium border ${improved ? 'bg-green-900 text-green-300 border-green-700' : 'bg-red-900 text-red-300 border-red-700'}`}>
+    <span className={`rounded px-2 py-0.5 text-xs font-medium border ${improved ? 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700' : 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700'}`}>
       {improved ? '▼' : '▲'} {Math.abs(pct).toFixed(1)}% MAPE
     </span>
   );
@@ -252,7 +252,7 @@ export default function EvaluationPage() {
                   </label>
                 ))}
               </div>
-              {formError && <p className="text-sm text-red-400" role="alert">{formError}</p>}
+              {formError && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{formError}</p>}
               <button
                 type="submit"
                 disabled={running}

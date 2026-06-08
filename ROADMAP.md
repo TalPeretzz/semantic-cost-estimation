@@ -861,6 +861,162 @@ Academic validation — run with a real Claude API call (flagged separately, onl
 
 ---
 
+---
+
+## Milestone 8: UX Enhancements
+
+**Goal:** Make the application easier and more transparent to use — quick project creation, clear estimation feedback, insight into the LLM pipeline, and a theme toggle.
+
+---
+
+### Phase 11: Dark / Light Mode Toggle
+
+**Scope:** Client only — `feature/client-theme-toggle`
+
+**Problem:** The app has no theme switching. Users working in dark environments have no way to toggle.
+
+**Tasks:**
+- Install `next-themes` in `apps/client`
+- Set `darkMode: 'class'` in `apps/client/tailwind.config.ts`
+- Wrap root layout in `<ThemeProvider attribute="class" defaultTheme="system">` in `apps/client/app/layout.tsx`
+- Create `apps/client/components/ThemeToggle.tsx` — a sun/moon icon button that calls `useTheme().setTheme()`
+- Add `<ThemeToggle />` to the existing sticky navbar in `apps/client/app/layout.tsx`
+- Verify all existing Tailwind CSS-variable classes (`text-foreground`, `bg-muted`, `border-border`, etc.) respond correctly under the `dark` class
+
+**Files touched:**
+- `apps/client/package.json` — add `next-themes`
+- `apps/client/tailwind.config.ts` — `darkMode: 'class'`
+- `apps/client/app/layout.tsx` — `ThemeProvider` wrapper + `ThemeToggle` in nav
+- `apps/client/components/ThemeToggle.tsx` (new)
+
+**Acceptance Criteria:**
+- Sun icon shown in dark mode, moon icon in light mode
+- Theme persists across page reloads (localStorage via `next-themes`)
+- No flash of wrong theme on load (`suppressHydrationWarning` on `<html>`)
+- All existing pages look correct in both themes
+
+---
+
+### Phase 12: Animated Estimation Loader Modal
+
+**Scope:** Client only — `feature/client-estimation-loader`
+
+**Problem:** Clicking "Run Estimation" gives no feedback — the POST /estimations call blocks for several seconds (COCOMO + LLM call) with no UI response.
+
+**Tasks:**
+- Create `apps/client/components/EstimationLoaderModal.tsx` — a full-screen modal overlay with a 3-step animated pipeline:
+  - Step 1 "Computing COCOMO baseline" — gear SVG with CSS spin animation (2 s)
+  - Step 2 "Extracting semantic signals via Claude" — sparkle/brain SVG with CSS pulse animation (3 s)
+  - Step 3 "Computing hybrid estimate" — bar-chart SVG with CSS draw-in animation (1 s)
+  - Steps auto-advance on a timer since the POST is one blocking call with no streaming events
+- Show modal immediately on "Run Estimation" button click; close when `runEstimation()` resolves (success or error)
+- On error, replace the loader with an inline error state inside the modal (red icon + message + close button) rather than closing silently
+- All SVG animations use Tailwind `animate-spin`, `animate-pulse`, or custom `@keyframes` in `globals.css` — no external animation library
+
+**Files touched:**
+- `apps/client/components/EstimationLoaderModal.tsx` (new)
+- `apps/client/app/projects/[id]/page.tsx` — import and show/hide the modal around `runEstimation()`
+- `apps/client/app/globals.css` — add `@keyframes` for the bar-chart draw-in if needed
+
+**Acceptance Criteria:**
+- Modal appears instantly on button click
+- Steps advance on the correct timer (2 s / 3 s / 1 s)
+- Modal closes and user is redirected to `/estimation/:id` on success
+- Error state shown inside modal instead of silent close on failure
+- No layout shift when modal opens (use `fixed inset-0` overlay)
+
+---
+
+### Phase 13: Free-Text Quick Create
+
+**Scope:** Client only — `feature/client-quick-create`
+
+**Problem:** The project creation form requires filling in `domain`, `sizeKloc`, `teamSize`, and `experienceLevel` even when the user just wants to paste a description and immediately get an estimate. The structured fields are necessary for COCOMO II but they raise the barrier for first-time use.
+
+**Tasks:**
+- Redesign the create-project form into two modes accessible via a tab or toggle:
+  - **Quick** tab — fields: `name` (required) + `description` textarea (required) + optional `actualEffortPm`; COCOMO parameters hidden with sensible defaults (`domain: "semi-detached"`, `sizeKloc: 10`, `teamSize: 5`, `experienceLevel: "nominal"`, `inputType: "freetext"`)
+  - **Advanced** tab — all current fields visible (same form as today)
+- After a Quick create, immediately call `runEstimation(projectId)` and show the loader modal (Phase 12) without requiring the user to navigate to the project detail page first
+- On estimation completion, redirect directly to `/estimation/:id`
+- Backend contract is unchanged — all required fields are still sent, Quick mode just pre-fills the COCOMO defaults client-side
+
+**Files touched:**
+- `apps/client/app/projects/page.tsx` — new Quick/Advanced tab UI in the create modal/form
+- `apps/client/lib/api-client.ts` — add `createProjectAndEstimate(payload)` helper that chains `createProject` + `runEstimation`
+
+**Acceptance Criteria:**
+- Quick tab: user fills name + description, clicks "Estimate" — one action creates the project and starts the estimation
+- Advanced tab: all current fields available and unchanged
+- Default COCOMO values are visible in Advanced tab after a Quick create so the user can inspect them
+- Switching tabs preserves already-entered values
+
+---
+
+### Phase 14: LLM Prompt Transparency Panel
+
+**Scope:** Server + Client — two separate branches/PRs
+
+#### Phase 14a — Server: Store Normalized Text (`feature/server-normalized-text`)
+
+**Problem:** The estimation result page shows signals and adjustments but there is no record of what text was actually sent to Claude.
+
+**Tasks:**
+- Add `normalizedText: string | null` column to the `Estimation` entity (`apps/server/src/modules/estimation/entities/estimation.entity.ts`)
+- In `EstimationService.runEstimation()`, capture the string returned by `TextNormalizerService.normalize()` and persist it on the estimation record
+- Expose `normalizedText` in the `GET /estimations/:id` response
+- Add `normalizedText: string | null` to the shared `Estimation` interface in `packages/types/src/estimation.types.ts`
+
+**Files touched:**
+- `apps/server/src/modules/estimation/entities/estimation.entity.ts`
+- `apps/server/src/modules/estimation/estimation.service.ts`
+- `packages/types/src/estimation.types.ts`
+
+**Acceptance Criteria:**
+- New `normalized_text` column exists after TypeORM sync
+- `GET /estimations/:id` response includes `normalizedText` (non-null for completed estimations, null for legacy rows)
+- Existing estimations unaffected (column nullable, no migration required beyond `synchronize: true`)
+
+#### Phase 14b — Client: Transparency Accordion (`feature/client-llm-transparency`)
+
+**Depends on:** Phase 14a merged and server restarted.
+
+**Tasks:**
+- Add a collapsible "What was sent to Claude" accordion at the bottom of `apps/client/app/estimation/[id]/page.tsx`
+- Three tabs inside the accordion:
+  - **Normalized text** — the `normalizedText` value from the API, rendered in a `<pre>` monospace block with a "Copy" button
+  - **System prompt** — the hardcoded LLM system prompt (static string, no API call), shown in a `<pre>` block
+  - **Raw LLM output** — reconstruct the JSON from the existing signal records and display it in a `<pre>` block
+- Accordion is collapsed by default; opens on click
+- Show a tooltip on the accordion header: "See exactly what was sent to the AI and what it returned"
+
+**Files touched:**
+- `apps/client/app/estimation/[id]/page.tsx`
+
+**Acceptance Criteria:**
+- Accordion visible on all completed estimation detail pages
+- "Normalized text" tab shows the actual text sent (truncated at 6000 chars)
+- "System prompt" tab shows the exact prompt template
+- "Raw LLM output" tab shows valid JSON with all 5 signal entries
+- "Copy" button copies content to clipboard
+- Accordion hidden (or shows "not available") for failed/pending estimations
+
+---
+
+### Milestone 8 — Implementation Order
+
+| Phase | Branch | Scope | Depends on |
+|-------|--------|-------|------------|
+| 11 — Dark/light toggle | `feature/client-theme-toggle` | client | — |
+| 12 — Estimation loader modal | `feature/client-estimation-loader` | client | — |
+| 13 — Quick create | `feature/client-quick-create` | client | Phase 12 (loader modal) |
+| 14a — Store normalized text | `feature/server-normalized-text` | server | — |
+| 14b — Transparency accordion | `feature/client-llm-transparency` | client | Phase 14a merged |
+
+Phases 11, 12, and 14a can be worked in parallel. Phase 13 reuses the loader modal from Phase 12. Phase 14b depends on the server column added in Phase 14a.
+
+---
+
 ## Appendix A: COCOMO II Constants Reference
 
 ```

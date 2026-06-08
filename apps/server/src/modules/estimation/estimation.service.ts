@@ -14,6 +14,7 @@ import { NOMINAL_EAF } from '@sce/constants';
 export interface EstimationDetail extends Estimation {
   signals: Signal[];
   adjustmentResult: AdjustmentResult | null;
+  actualEffortPm: number | null;
 }
 
 @Injectable()
@@ -81,13 +82,21 @@ export class EstimationService {
 
   async findOneWithDetail(id: string): Promise<EstimationDetail> {
     const estimation = await this.findOne(id);
-    const signals = await this.signalsService.findByEstimation(id);
+    const [signals, project] = await Promise.all([
+      this.signalsService.findByEstimation(id),
+      this.projectsService.findOne(estimation.projectId),
+    ]);
 
     const adjustmentResult =
       estimation.nominalEffortPm !== null && signals.length > 0
         ? this.adjustmentService.compute(estimation.nominalEffortPm, signals)
         : null;
 
-    return { ...estimation, signals, adjustmentResult };
+    return {
+      ...estimation,
+      signals,
+      adjustmentResult,
+      actualEffortPm: project.actualEffortPm ?? null,
+    };
   }
 }

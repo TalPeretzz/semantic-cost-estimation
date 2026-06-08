@@ -27,6 +27,7 @@ export interface Estimation {
   cocomoInputs: Record<string, unknown> | null;
   nominalEffortPm: number | null;
   hybridEffortPm: number | null;
+  actualEffortPm: number | null;
   errorMessage: string | null;
   signals: Signal[];
   adjustmentResult: AdjustmentResult | null;

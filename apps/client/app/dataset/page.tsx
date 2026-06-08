@@ -115,7 +115,7 @@ export default function DatasetPage() {
             )}
           </div>
 
-          {error && <p className="mt-3 text-sm text-red-400" role="alert">{error}</p>}
+          {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
 
           {file && !importing && (
             <button
@@ -140,7 +140,7 @@ export default function DatasetPage() {
               <div className="flex gap-6 text-sm">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">Imported</span>
-                  <span className="text-2xl font-bold text-green-400">{result.imported}</span>
+                  <span className="text-2xl font-bold text-green-600 dark:text-green-400">{result.imported}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">Skipped</span>
@@ -148,14 +148,14 @@ export default function DatasetPage() {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">Errors</span>
-                  <span className="text-2xl font-bold text-red-400">{result.errors.length}</span>
+                  <span className="text-2xl font-bold text-red-600 dark:text-red-400">{result.errors.length}</span>
                 </div>
               </div>
 
               {result.errors.length > 0 && (
                 <ul className="space-y-1 border-t border-border pt-3">
                   {result.errors.map((err, i) => (
-                    <li key={i} className="text-xs text-red-400">Row {err.row}: {err.message}</li>
+                    <li key={i} className="text-xs text-red-600 dark:text-red-400">Row {err.row}: {err.message}</li>
                   ))}
                 </ul>
               )}
