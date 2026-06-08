@@ -1,4 +1,23 @@
-import type { Estimation, EvaluationRun, ImportResult } from '@sce/types';
+import type { Estimation, EvaluationRun, ImportResult, Project, DomainType, ExperienceLevel } from '@sce/types';
+
+export interface CreateProjectPayload {
+  name: string;
+  inputType: 'freetext' | 'structured';
+  descriptionText?: string;
+  descriptionJson?: Record<string, string>;
+  domain: DomainType;
+  sizeKloc: number;
+  teamSize: number;
+  experienceLevel: ExperienceLevel;
+  actualEffortPm?: number | null;
+}
+
+export async function createProject(payload: CreateProjectPayload): Promise<Project> {
+  return apiFetch<Project>('/projects', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
