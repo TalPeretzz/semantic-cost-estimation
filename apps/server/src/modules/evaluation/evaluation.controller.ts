@@ -1,7 +1,9 @@
+import { ApiTags } from '@nestjs/swagger';
 import { Controller, Post, Get, Param, Body } from '@nestjs/common';
 import { EvaluationService } from './evaluation.service';
 import { RunEvaluationDto } from './dto/run-evaluation.dto';
 
+@ApiTags('evaluations')
 @Controller('evaluations')
 export class EvaluationController {
   constructor(private readonly evaluationService: EvaluationService) {}

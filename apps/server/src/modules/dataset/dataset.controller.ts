@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Post,
@@ -8,6 +9,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DatasetService } from './dataset.service';
 
+@ApiTags('datasets')
 @Controller('datasets')
 export class DatasetController {
   constructor(private readonly datasetService: DatasetService) {}

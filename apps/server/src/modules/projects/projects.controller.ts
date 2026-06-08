@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -16,6 +17,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { Project } from './entities/project.entity';
 
+@ApiTags('projects')
 @Controller('projects')
 export class ProjectsController {
   private readonly logger = new Logger(ProjectsController.name);
