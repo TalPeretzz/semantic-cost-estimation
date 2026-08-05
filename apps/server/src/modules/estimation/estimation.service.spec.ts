@@ -45,6 +45,7 @@ const mockLlmService = { extractSignals: jest.fn() };
 const mockTextNormalizer = { normalize: jest.fn() };
 const mockSignalsService = { createBulk: jest.fn(), findByEstimation: jest.fn() };
 const mockAdjustmentService = { compute: jest.fn() };
+const mockGptValidation = { validate: jest.fn().mockResolvedValue(null) };
 
 function makeService() {
   return new EstimationService(
@@ -55,6 +56,7 @@ function makeService() {
     mockTextNormalizer as any,
     mockSignalsService as any,
     mockAdjustmentService as any,
+    mockGptValidation as any,
   );
 }
 
@@ -98,6 +100,7 @@ describe('EstimationService', () => {
         process_maturity:         { level: 'medium', rationale: 'r' },
       });
       mockSignalsService.createBulk.mockResolvedValue(mockSignals);
+      mockGptValidation.validate.mockResolvedValue(null);
       mockAdjustmentService.compute.mockReturnValue({
         productOfFactors: 0.773,
         hybridEffortPm: 29.0,
