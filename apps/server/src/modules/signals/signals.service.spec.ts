@@ -7,6 +7,9 @@ const validLlmOutput = {
   external_integrations:    { level: 'low' as const,      rationale: 'Few APIs.' },
   requirement_stability:    { level: 'high' as const,     rationale: 'Stable reqs.' },
   uncertainty:              { level: 'very_low' as const, rationale: 'Well known domain.' },
+  reliability_requirement:  { level: 'medium' as const,   rationale: 'Moderate reliability needed.' },
+  platform_complexity:      { level: 'low' as const,      rationale: 'Standard cloud deployment.' },
+  schedule_pressure:        { level: 'medium' as const,   rationale: 'Typical sprint cadence.' },
   precedentedness:          { level: 'medium' as const,   rationale: 'Some prior experience.' },
   development_flexibility:  { level: 'medium' as const,   rationale: 'Normal flexibility.' },
   architecture_risk:        { level: 'medium' as const,   rationale: 'Architecture reasonably resolved.' },
@@ -31,13 +34,13 @@ describe('SignalsService', () => {
 
   describe('createBulk', () => {
     it('saves exactly 5 signal records', async () => {
-      const saved = Array.from({ length: 5 }, (_, i) => ({ id: `sig-${i}` }));
+      const saved = Array.from({ length: 8 }, (_, i) => ({ id: `sig-${i}` }));
       mockRepo.save.mockResolvedValue(saved);
 
       const result = await service.createBulk('estimation-uuid', validLlmOutput);
 
       expect(mockRepo.save).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(5);
+      expect(result).toHaveLength(8);
     });
 
     it('maps high level to ordinal 1 and factor 1.1', async () => {

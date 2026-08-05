@@ -16,6 +16,9 @@ export class Signal {
       'external_integrations',
       'requirement_stability',
       'uncertainty',
+      'reliability_requirement',
+      'platform_complexity',
+      'schedule_pressure',
     ],
   })
   signalName!:
@@ -23,7 +26,10 @@ export class Signal {
     | 'architectural_complexity'
     | 'external_integrations'
     | 'requirement_stability'
-    | 'uncertainty';
+    | 'uncertainty'
+    | 'reliability_requirement'
+    | 'platform_complexity'
+    | 'schedule_pressure';
 
   @Column({
     type: 'enum',

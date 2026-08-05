@@ -18,4 +18,7 @@ export const SIGNAL_NAMES = [
   'external_integrations',
   'requirement_stability',
   'uncertainty',
+  'reliability_requirement',
+  'platform_complexity',
+  'schedule_pressure',
 ] as const;
