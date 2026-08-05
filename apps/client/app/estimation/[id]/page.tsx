@@ -189,17 +189,100 @@ function SignalRow({ signal }: { signal: Signal }) {
   );
 }
 
+const SF_SIGNAL_LABELS: Record<string, string> = {
+  precedentedness:         'Precedentedness',
+  development_flexibility: 'Dev. Flexibility',
+  architecture_risk:       'Arch. Risk Resolution',
+  team_cohesion:           'Team Cohesion',
+  process_maturity:        'Process Maturity',
+};
+
+interface ScaleFactorAssessment {
+  level: string;
+  sfKey: string;
+  sfValue: number;
+  rationale: string;
+}
+
+function sfLevelColor(level: string): string {
+  if (level === 'very_high' || level === 'high') return 'text-green-600 dark:text-green-400';
+  if (level === 'very_low'  || level === 'low')  return 'text-orange-600 dark:text-orange-400';
+  return 'text-muted-foreground';
+}
+
+function ScaleFactorTable({ assessments, dynamicB, nominalB }: {
+  assessments: Record<string, ScaleFactorAssessment>;
+  dynamicB: number;
+  nominalB: number;
+}) {
+  const bDiff = dynamicB - nominalB;
+  return (
+    <div className="space-y-3">
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-border bg-muted/50">
+              <th className="py-2.5 pl-4 pr-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Scale Factor</th>
+              <th className="py-2.5 pr-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Level</th>
+              <th className="py-2.5 pr-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">SF Value</th>
+              <th className="py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(assessments).map(([name, a]) => (
+              <tr key={name} className="border-t border-border">
+                <td className="py-3 pl-4 pr-4 text-sm font-medium text-foreground">
+                  {SF_SIGNAL_LABELS[name] ?? name}
+                  <span className="ml-1.5 text-xs text-muted-foreground">{a.sfKey}</span>
+                </td>
+                <td className={`py-3 pr-4 text-sm font-medium ${sfLevelColor(a.level)}`}>
+                  {LEVEL_LABELS[a.level] ?? a.level}
+                </td>
+                <td className="py-3 pr-4 text-sm text-center tabular-nums text-foreground">{a.sfValue.toFixed(2)}</td>
+                <td className="py-3 text-sm leading-relaxed text-muted-foreground">{a.rationale}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-muted-foreground px-1">
+        B = 0.91 + 0.01 × Σ(SF) ={' '}
+        <span className={`font-medium tabular-nums ${bDiff > 0.02 ? 'text-orange-600 dark:text-orange-400' : bDiff < -0.02 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
+          {dynamicB.toFixed(4)}
+        </span>
+        {Math.abs(bDiff) > 0.001 && (
+          <span className="ml-1 text-muted-foreground">
+            ({bDiff > 0 ? '+' : ''}{bDiff.toFixed(4)} vs nominal {nominalB.toFixed(4)})
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
 function FormulaTrace({ estimation }: { estimation: Estimation }) {
-  const { nominalEffortPm, hybridEffortPm, adjustmentResult } = estimation;
+  const { nominalEffortPm, hybridEffortPm, adjustmentResult, cocomoInputs } = estimation;
   if (!nominalEffortPm || !hybridEffortPm || !adjustmentResult) return null;
 
   const { perSignalBreakdown, productOfFactors } = adjustmentResult;
+  const B        = (cocomoInputs as Record<string, number> | null)?.B ?? null;
+  const nominalB = (cocomoInputs as Record<string, number> | null)?.nominalB ?? null;
 
   return (
     <div className="rounded-lg border border-border bg-muted px-5 py-4 font-mono text-sm leading-6 space-y-2">
       <p className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Formula Trace</p>
+      {B != null && (
+        <p className="text-foreground tabular-nums">
+          B = <span className={B !== nominalB && nominalB != null ? 'text-orange-600 dark:text-orange-400' : 'text-foreground'}>{B.toFixed(4)}</span>
+          {nominalB != null && B !== nominalB && (
+            <span className="text-muted-foreground text-xs ml-2">(nominal: {nominalB.toFixed(4)})</span>
+          )}
+        </p>
+      )}
       <p className="text-foreground tabular-nums">
-        E<sub>nom</sub> = <span className="text-blue-600 dark:text-blue-400">{nominalEffortPm.toFixed(2)}</span> PM
+        E<sub>nom</sub> = 2.94 × {(cocomoInputs as Record<string, number> | null)?.sizeKloc ?? '?'}
+        <sup>{B != null ? B.toFixed(2) : '1.10'}</sup> ={' '}
+        <span className="text-blue-600 dark:text-blue-400">{nominalEffortPm.toFixed(2)}</span> PM
       </p>
       {perSignalBreakdown.map((s) => (
         <p key={s.signalName} className="text-foreground tabular-nums">
@@ -367,6 +450,20 @@ export default function EstimationDetailPage({ params }: PageProps) {
                 </tbody>
               </table>
             </div>
+          </section>
+        )}
+
+        {isCompleted && estimation.cocomoInputs &&
+          !!(estimation.cocomoInputs as Record<string, unknown>).scaleFactorAssessments && (
+          <section aria-labelledby="sf-heading">
+            <h2 id="sf-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Scale Factor Assessment
+            </h2>
+            <ScaleFactorTable
+              assessments={(estimation.cocomoInputs as Record<string, unknown>).scaleFactorAssessments as Record<string, ScaleFactorAssessment>}
+              dynamicB={(estimation.cocomoInputs as Record<string, number>).B}
+              nominalB={(estimation.cocomoInputs as Record<string, number>).nominalB}
+            />
           </section>
         )}
 
