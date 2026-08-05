@@ -607,6 +607,21 @@ export default function EstimationDetailPage({ params }: PageProps) {
           </section>
         )}
 
+        {isCompleted && (
+          <section aria-labelledby="validation-heading">
+            <h2 id="validation-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Cross-LLM Validation
+            </h2>
+            {estimation.validationResult ? (
+              <ValidationPanel validation={estimation.validationResult} />
+            ) : (
+              <div className="rounded-lg border border-border px-5 py-4 text-sm text-muted-foreground">
+                Not available for this estimation — re-run to trigger GPT cross-validation.
+              </div>
+            )}
+          </section>
+        )}
+
         {hasSignals && (
           <section aria-labelledby="signals-heading">
             <h2 id="signals-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -669,15 +684,6 @@ export default function EstimationDetailPage({ params }: PageProps) {
               Formula Trace
             </h2>
             <FormulaTrace estimation={estimation} />
-          </section>
-        )}
-
-        {isCompleted && estimation.validationResult && (
-          <section aria-labelledby="validation-heading">
-            <h2 id="validation-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Cross-LLM Validation
-            </h2>
-            <ValidationPanel validation={estimation.validationResult} />
           </section>
         )}
 
