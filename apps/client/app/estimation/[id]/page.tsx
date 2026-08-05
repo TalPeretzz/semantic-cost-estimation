@@ -263,6 +263,121 @@ function ScaleFactorTable({ assessments, dynamicB, nominalB }: {
   );
 }
 
+const SYSTEM_PROMPT = `You are a software engineering expert specializing in COCOMO II cost estimation.
+Analyze the project description and output exactly thirteen signal assessments as JSON.
+Return ONLY valid JSON — no markdown, no explanation, no text outside the JSON object.
+If a dimension is not mentioned in the description, default to "medium".
+
+Rate functional_complexity, architectural_complexity, external_integrations, requirement_stability,
+uncertainty, reliability_requirement, platform_complexity, schedule_pressure as adjustment signals
+(higher = more effort).
+
+Rate precedentedness, development_flexibility, architecture_risk, team_cohesion, process_maturity
+as scale factor signals (higher = more favorable = lower cost exponent B).`;
+
+type TransparencyTab = 'normalized' | 'prompt' | 'llm';
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      className="rounded px-2 py-0.5 text-xs font-medium border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  );
+}
+
+function TransparencyAccordion({ estimation }: { estimation: Estimation }) {
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<TransparencyTab>('normalized');
+
+  const normalizedText = estimation.normalizedText ?? '(not available — re-run estimation to capture)';
+
+  const rawLlmJson = estimation.signals && estimation.signals.length > 0
+    ? JSON.stringify(
+        Object.fromEntries(
+          estimation.signals.map((s) => [
+            s.signalName,
+            { level: s.rawLevel, rationale: s.llmRationale },
+          ]),
+        ),
+        null,
+        2,
+      )
+    : '(no signals available)';
+
+  const tabs: { id: TransparencyTab; label: string }[] = [
+    { id: 'normalized', label: 'Normalized Text' },
+    { id: 'prompt',     label: 'System Prompt' },
+    { id: 'llm',        label: 'Raw LLM Output' },
+  ];
+
+  const activeContent =
+    tab === 'normalized' ? normalizedText :
+    tab === 'prompt'     ? SYSTEM_PROMPT  :
+    rawLlmJson;
+
+  return (
+    <div className="rounded-lg border border-border">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between px-5 py-4 text-left"
+        title="See exactly what was sent to the AI and what it returned"
+      >
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          What was sent to Claude
+        </span>
+        <span className="text-muted-foreground text-sm">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-border px-5 pb-5 pt-4 space-y-4">
+          {/* Tab bar */}
+          <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  tab === t.id
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {tab === 'normalized' && 'Text sent to the LLM after preprocessing'}
+                {tab === 'prompt'     && 'Static system prompt injected before the user message'}
+                {tab === 'llm'        && 'JSON returned by Claude, reconstructed from stored signals'}
+              </span>
+              <CopyButton text={activeContent} />
+            </div>
+            <pre className="max-h-80 overflow-auto rounded-lg bg-muted px-4 py-3 text-xs leading-5 text-foreground whitespace-pre-wrap break-words font-mono">
+              {activeContent.slice(0, 6000)}
+              {activeContent.length > 6000 && '\n\n… (truncated)'}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormulaTrace({ estimation }: { estimation: Estimation }) {
   const { nominalEffortPm, hybridEffortPm, adjustmentResult, cocomoInputs } = estimation;
   if (!nominalEffortPm || !hybridEffortPm || !adjustmentResult) return null;
@@ -476,6 +591,15 @@ export default function EstimationDetailPage({ params }: PageProps) {
               Formula Trace
             </h2>
             <FormulaTrace estimation={estimation} />
+          </section>
+        )}
+
+        {isCompleted && (
+          <section aria-labelledby="transparency-heading">
+            <h2 id="transparency-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              LLM Transparency
+            </h2>
+            <TransparencyAccordion estimation={estimation} />
           </section>
         )}
       </div>
