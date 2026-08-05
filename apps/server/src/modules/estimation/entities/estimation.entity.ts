@@ -27,6 +27,9 @@ export class Estimation {
   @Column({ type: 'text', nullable: true })
   normalizedText!: string | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  validationResult!: Record<string, unknown> | null;
+
   @Column({ type: 'text', nullable: true })
   errorMessage!: string | null;
 

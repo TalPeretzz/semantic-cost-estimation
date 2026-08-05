@@ -2,6 +2,21 @@ import type { Signal, SignalName } from './signals.types';
 
 export type EstimationStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export interface SignalComparison {
+  claudeLevel: string;
+  gptLevel: string;
+  agreed: boolean;
+}
+
+export interface ValidationResult {
+  gptModel: string;
+  agreementRate: number;
+  totalSignals: number;
+  agreedSignals: number;
+  perSignal: Record<string, SignalComparison>;
+  runAt: string;
+}
+
 export interface CocomoInputs {
   scaleFactors: Record<string, number>;
   effortMultipliers: Record<string, number>;
@@ -29,6 +44,7 @@ export interface Estimation {
   hybridEffortPm: number | null;
   actualEffortPm: number | null;
   normalizedText: string | null;
+  validationResult: ValidationResult | null;
   errorMessage: string | null;
   signals: Signal[];
   adjustmentResult: AdjustmentResult | null;

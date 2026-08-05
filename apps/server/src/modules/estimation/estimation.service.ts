@@ -8,6 +8,7 @@ import { LlmService } from '../llm/llm.service';
 import { TextNormalizerService } from '../llm/text-normalizer.service';
 import { SignalsService } from '../signals/signals.service';
 import { AdjustmentService, AdjustmentResult } from '../adjustment/adjustment.service';
+import { GptValidationService } from '../llm/gpt-validation.service';
 import { Signal } from '../signals/entities/signal.entity';
 import { NOMINAL_EAF } from '@sce/constants';
 
@@ -28,6 +29,7 @@ export class EstimationService {
     private readonly textNormalizer: TextNormalizerService,
     private readonly signalsService: SignalsService,
     private readonly adjustmentService: AdjustmentService,
+    private readonly gptValidation: GptValidationService,
   ) {}
 
   async runEstimation(projectId: string): Promise<Estimation> {
@@ -58,9 +60,13 @@ export class EstimationService {
         },
       );
 
-      const signals = await this.signalsService.createBulk(estimation.id, llmOutput);
+      const [signals, validationResult] = await Promise.all([
+        this.signalsService.createBulk(estimation.id, llmOutput),
+        this.gptValidation.validate(normalizedText, llmOutput),
+      ]);
       const { hybridEffortPm } = this.adjustmentService.compute(nominalEffortPm, signals);
 
+      estimation.validationResult = validationResult as Record<string, unknown> | null;
       estimation.status = 'completed';
       estimation.nominalEffortPm = nominalEffortPm;
       estimation.hybridEffortPm = hybridEffortPm;
