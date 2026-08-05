@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getEstimationDetail, ApiError } from '@/lib/api-client';
-import type { Estimation, Signal } from '@sce/types';
+import type { Estimation, Signal, ValidationResult } from '@sce/types';
 
 interface PageProps {
   params: { id: string };
@@ -294,6 +294,82 @@ function CopyButton({ text }: { text: string }) {
     >
       {copied ? 'Copied!' : 'Copy'}
     </button>
+  );
+}
+
+function ValidationPanel({ validation }: { validation: ValidationResult }) {
+  const pct = Math.round(validation.agreementRate * 100);
+  const diverged = Object.entries(validation.perSignal).filter(([, v]) => !v.agreed);
+  const agreed   = Object.entries(validation.perSignal).filter(([, v]) =>  v.agreed);
+
+  const ringColor =
+    pct >= 80 ? 'text-green-600 dark:text-green-400' :
+    pct >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+    'text-red-600 dark:text-red-400';
+
+  const borderColor =
+    pct >= 80 ? 'border-green-300 dark:border-green-700' :
+    pct >= 60 ? 'border-yellow-300 dark:border-yellow-700' :
+    'border-red-300 dark:border-red-700';
+
+  return (
+    <div className={`rounded-lg border ${borderColor} divide-y divide-border`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold text-foreground">
+            Cross-LLM Validation
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Same prompt sent to <span className="font-medium">{validation.gptModel}</span> · {new Date(validation.runAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className={`text-3xl font-bold tabular-nums ${ringColor}`}>{pct}%</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {validation.agreedSignals}/{validation.totalSignals} signals agreed
+          </p>
+        </div>
+      </div>
+
+      {/* Diverged signals */}
+      {diverged.length > 0 && (
+        <div className="px-5 py-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Diverged ({diverged.length})
+          </p>
+          <div className="space-y-2">
+            {diverged.map(([name, cmp]) => (
+              <div key={name} className="flex items-center justify-between rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2">
+                <span className="text-sm font-medium text-foreground">
+                  {SIGNAL_LABELS[name] ?? name}
+                </span>
+                <div className="flex items-center gap-2 text-xs tabular-nums">
+                  <span className="rounded bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 font-medium text-blue-700 dark:text-blue-300">
+                    Claude: {LEVEL_LABELS[cmp.claudeLevel] ?? cmp.claudeLevel}
+                  </span>
+                  <span className="text-muted-foreground">vs</span>
+                  <span className="rounded bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 font-medium text-orange-700 dark:text-orange-300">
+                    GPT: {LEVEL_LABELS[cmp.gptLevel] ?? cmp.gptLevel}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Agreed signals — collapsed list */}
+      {agreed.length > 0 && (
+        <div className="px-5 py-3">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-green-600 dark:text-green-400">{agreed.length} signals agreed</span>
+            {': '}
+            {agreed.map(([name]) => SIGNAL_LABELS[name] ?? name).join(', ')}
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -593,6 +669,15 @@ export default function EstimationDetailPage({ params }: PageProps) {
               Formula Trace
             </h2>
             <FormulaTrace estimation={estimation} />
+          </section>
+        )}
+
+        {isCompleted && estimation.validationResult && (
+          <section aria-labelledby="validation-heading">
+            <h2 id="validation-heading" className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Cross-LLM Validation
+            </h2>
+            <ValidationPanel validation={estimation.validationResult} />
           </section>
         )}
 
