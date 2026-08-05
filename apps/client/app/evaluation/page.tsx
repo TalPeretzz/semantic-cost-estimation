@@ -69,12 +69,46 @@ function DirectionBadge({ predicted, actual }: { predicted: number; actual: numb
   );
 }
 
+function exportToCsv(detail: EvaluationDetail) {
+  const rows = [
+    ['Project', 'Actual (PM)', 'COCOMO (PM)', 'COCOMO Error%', 'Hybrid (PM)', 'Hybrid Error%', 'Winner'],
+    ...detail.perProjectRows.map((r) => {
+      const basePct = (r.baselineAbsoluteError / r.actualEffortPm * 100).toFixed(1);
+      const hybPct  = (r.hybridAbsoluteError  / r.actualEffortPm * 100).toFixed(1);
+      const winner  = r.hybridAbsoluteError < r.baselineAbsoluteError ? 'Hybrid' : 'COCOMO';
+      return [r.projectName, r.actualEffortPm.toFixed(0), r.baselineEffortPm.toFixed(1), basePct, r.hybridEffortPm.toFixed(1), hybPct, winner];
+    }),
+    [],
+    ['', '', 'MAE', detail.baselineMae.toFixed(2), '', detail.hybridMae.toFixed(2), ''],
+    ['', '', 'RMSE', detail.baselineRmse.toFixed(2), '', detail.hybridRmse.toFixed(2), ''],
+    ['', '', 'MAPE%', detail.baselineMape.toFixed(2), '', detail.hybridMape.toFixed(2), ''],
+  ];
+  const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${detail.name.replace(/\s+/g, '_')}_evaluation.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function DetailPanel({ detail }: { detail: EvaluationDetail }) {
   const hybridWins = detail.hybridMape < detail.baselineMape;
   const improvement = ((detail.baselineMape - detail.hybridMape) / detail.baselineMape * 100);
 
   return (
     <div className="space-y-6">
+      {/* Export */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => exportToCsv(detail)}
+          className="rounded-md border border-border bg-muted px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Export CSV
+        </button>
+      </div>
+
       {/* Summary headline */}
       <div className={`rounded-lg border px-5 py-4 flex items-center gap-4 ${hybridWins ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' : 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20'}`}>
         <span className={`text-2xl font-bold ${hybridWins ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
