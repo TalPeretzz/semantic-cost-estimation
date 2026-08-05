@@ -43,7 +43,7 @@ const mockProjectsService = { findOne: jest.fn() };
 const mockCocomoService = { computeNominalEffort: jest.fn() };
 const mockLlmService = { extractSignals: jest.fn() };
 const mockTextNormalizer = { normalize: jest.fn() };
-const mockSignalsService = { createBulk: jest.fn(), findByEstimation: jest.fn() };
+const mockSignalsService = { createBulk: jest.fn(), findByEstimation: jest.fn(), getDistribution: jest.fn() };
 const mockAdjustmentService = { compute: jest.fn() };
 const mockGptValidation = { validate: jest.fn().mockResolvedValue(null) };
 
@@ -251,6 +251,77 @@ describe('EstimationService', () => {
 
       const service = makeService();
       await expect(service.findOneWithDetail('bad-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getStats', () => {
+    const distribution = [
+      { signalName: 'functional_complexity', level: 'high', count: 5 },
+    ];
+
+    it('returns totalEstimations and signalDistribution from repository and signals service', async () => {
+      mockRepo.find.mockResolvedValue([mockEstimation, { ...mockEstimation, id: 'e2' }]);
+      mockSignalsService.getDistribution.mockResolvedValue(distribution);
+
+      const service = makeService();
+      const result = await service.getStats();
+
+      expect(result.totalEstimations).toBe(2);
+      expect(result.signalDistribution).toEqual(distribution);
+      expect(mockRepo.find).toHaveBeenCalledWith({ where: { status: 'completed' } });
+    });
+
+    it('computes avgAgreementRate from estimations that have validationResult', async () => {
+      const withValidation = {
+        ...mockEstimation,
+        validationResult: {
+          agreementRate: 0.8,
+          perSignal: {
+            functional_complexity: { agreed: false },
+            uncertainty: { agreed: true },
+          },
+        },
+      };
+      mockRepo.find.mockResolvedValue([mockEstimation, withValidation]);
+      mockSignalsService.getDistribution.mockResolvedValue([]);
+
+      const service = makeService();
+      const result = await service.getStats();
+
+      expect(result.validationStats.totalValidated).toBe(1);
+      expect(result.validationStats.avgAgreementRate).toBeCloseTo(0.8, 5);
+    });
+
+    it('returns null avgAgreementRate when no estimation has been validated', async () => {
+      mockRepo.find.mockResolvedValue([mockEstimation]);
+      mockSignalsService.getDistribution.mockResolvedValue([]);
+
+      const service = makeService();
+      const result = await service.getStats();
+
+      expect(result.validationStats.totalValidated).toBe(0);
+      expect(result.validationStats.avgAgreementRate).toBeNull();
+    });
+
+    it('ranks perSignalDivergence by divergence rate descending', async () => {
+      const withValidation = {
+        ...mockEstimation,
+        validationResult: {
+          agreementRate: 0.5,
+          perSignal: {
+            functional_complexity: { agreed: false },
+            uncertainty: { agreed: true },
+          },
+        },
+      };
+      mockRepo.find.mockResolvedValue([withValidation]);
+      mockSignalsService.getDistribution.mockResolvedValue([]);
+
+      const service = makeService();
+      const result = await service.getStats();
+
+      const names = result.validationStats.perSignalDivergence.map((d) => d.signalName);
+      expect(names[0]).toBe('functional_complexity');
     });
   });
 });

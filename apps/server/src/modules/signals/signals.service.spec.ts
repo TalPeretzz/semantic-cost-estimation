@@ -19,10 +19,19 @@ const validLlmOutput = {
   process_maturity:         { level: 'medium' as const,   rationale: 'Defined process.' },
 };
 
+const mockQueryBuilder = {
+  select: jest.fn().mockReturnThis(),
+  addSelect: jest.fn().mockReturnThis(),
+  groupBy: jest.fn().mockReturnThis(),
+  addGroupBy: jest.fn().mockReturnThis(),
+  getRawMany: jest.fn(),
+};
+
 const mockRepo = {
   create: jest.fn((data) => ({ ...data })),
   save: jest.fn(),
   find: jest.fn(),
+  createQueryBuilder: jest.fn(() => mockQueryBuilder),
 };
 
 describe('SignalsService', () => {
@@ -84,6 +93,28 @@ describe('SignalsService', () => {
       mockRepo.find.mockResolvedValue([]);
       await service.findByEstimation('est-uuid');
       expect(mockRepo.find).toHaveBeenCalledWith({ where: { estimationId: 'est-uuid' } });
+    });
+  });
+
+  describe('getDistribution', () => {
+    it('returns rows with count coerced to number', async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { signalName: 'functional_complexity', level: 'high',   count: '42' },
+        { signalName: 'functional_complexity', level: 'medium', count: '10' },
+      ]);
+
+      const result = await service.getDistribution();
+
+      expect(result).toEqual([
+        { signalName: 'functional_complexity', level: 'high',   count: 42 },
+        { signalName: 'functional_complexity', level: 'medium', count: 10 },
+      ]);
+    });
+
+    it('returns empty array when no signals exist', async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+      const result = await service.getDistribution();
+      expect(result).toEqual([]);
     });
   });
 });

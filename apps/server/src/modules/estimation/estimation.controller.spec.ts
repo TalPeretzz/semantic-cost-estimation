@@ -15,6 +15,7 @@ const mockEstimationService = {
   findByProject: jest.fn(),
   findOne: jest.fn(),
   findOneWithDetail: jest.fn(),
+  getStats: jest.fn(),
 };
 
 describe('EstimationController', () => {
@@ -50,6 +51,22 @@ describe('EstimationController', () => {
 
       expect(mockEstimationService.findByProject).toHaveBeenCalledWith('project-uuid');
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getStats', () => {
+    it('delegates to estimationService.getStats and returns result', async () => {
+      const mockStats = {
+        totalEstimations: 42,
+        validationStats: { totalValidated: 3, avgAgreementRate: 0.87, perSignalDivergence: [] },
+        signalDistribution: [],
+      };
+      mockEstimationService.getStats.mockResolvedValue(mockStats);
+
+      const result = await controller.getStats();
+
+      expect(mockEstimationService.getStats).toHaveBeenCalled();
+      expect(result).toEqual(mockStats);
     });
   });
 
