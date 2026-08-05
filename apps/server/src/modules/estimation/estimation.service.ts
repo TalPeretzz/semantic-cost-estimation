@@ -43,6 +43,7 @@ export class EstimationService {
         descriptionJson: project.descriptionJson as Record<string, string> | null,
       });
 
+      estimation.normalizedText = normalizedText;
       const llmOutput = await this.llmService.extractSignals(normalizedText);
 
       const { nominalEffortPm, cocomoInputs } = this.cocomoService.computeNominalEffort(

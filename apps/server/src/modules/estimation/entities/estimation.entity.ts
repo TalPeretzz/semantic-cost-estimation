@@ -25,6 +25,9 @@ export class Estimation {
   cocomoInputs!: Record<string, unknown> | null;
 
   @Column({ type: 'text', nullable: true })
+  normalizedText!: string | null;
+
+  @Column({ type: 'text', nullable: true })
   errorMessage!: string | null;
 
   @CreateDateColumn()
