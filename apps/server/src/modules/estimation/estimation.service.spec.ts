@@ -89,6 +89,8 @@ describe('EstimationService', () => {
         reliability_requirement:  { level: 'medium', rationale: 'r' },
         platform_complexity:      { level: 'low',    rationale: 'r' },
         schedule_pressure:        { level: 'medium', rationale: 'r' },
+        data_complexity:          { level: 'low',    rationale: 'r' },
+        team_experience_gap:      { level: 'low',    rationale: 'r' },
         precedentedness:          { level: 'medium', rationale: 'r' },
         development_flexibility:  { level: 'medium', rationale: 'r' },
         architecture_risk:        { level: 'medium', rationale: 'r' },

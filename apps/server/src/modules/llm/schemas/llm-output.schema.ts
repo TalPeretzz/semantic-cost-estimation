@@ -18,6 +18,8 @@ export const llmOutputSchema = z.object({
   reliability_requirement:  entrySchema,
   platform_complexity:      entrySchema,
   schedule_pressure:        entrySchema,
+  data_complexity:          entrySchema,
+  team_experience_gap:      entrySchema,
 
   // Scale factor signals — map to COCOMO II SF values that determine exponent B
   // Higher level = more favorable condition = lower SF value = lower B

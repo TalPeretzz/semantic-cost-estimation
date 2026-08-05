@@ -11,6 +11,8 @@ const validLlmResponse = {
   reliability_requirement:  { level: 'medium', rationale: 'Moderate reliability needed.' },
   platform_complexity:      { level: 'low',    rationale: 'Standard cloud deployment.' },
   schedule_pressure:        { level: 'medium', rationale: 'Typical sprint cadence.' },
+  data_complexity:          { level: 'low',    rationale: 'Simple data model.' },
+  team_experience_gap:      { level: 'low',    rationale: 'Experienced team.' },
   precedentedness:          { level: 'medium', rationale: 'Some prior experience.' },
   development_flexibility:  { level: 'medium', rationale: 'Normal flexibility.' },
   architecture_risk:        { level: 'medium', rationale: 'Architecture reasonably resolved.' },

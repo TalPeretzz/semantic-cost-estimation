@@ -19,6 +19,8 @@ export class Signal {
       'reliability_requirement',
       'platform_complexity',
       'schedule_pressure',
+      'data_complexity',
+      'team_experience_gap',
     ],
   })
   signalName!:
@@ -29,7 +31,9 @@ export class Signal {
     | 'uncertainty'
     | 'reliability_requirement'
     | 'platform_complexity'
-    | 'schedule_pressure';
+    | 'schedule_pressure'
+    | 'data_complexity'
+    | 'team_experience_gap';
 
   @Column({
     type: 'enum',

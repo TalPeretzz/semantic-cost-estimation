@@ -21,4 +21,6 @@ export const SIGNAL_NAMES = [
   'reliability_requirement',
   'platform_complexity',
   'schedule_pressure',
+  'data_complexity',
+  'team_experience_gap',
 ] as const;
