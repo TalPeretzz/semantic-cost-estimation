@@ -58,62 +58,111 @@ function RunCard({ run, onSelect }: { run: EvaluationRun; onSelect: (id: string)
   );
 }
 
+function DirectionBadge({ predicted, actual }: { predicted: number; actual: number }) {
+  const pct = ((predicted - actual) / actual) * 100;
+  const over = pct > 0;
+  return (
+    <span className={`text-xs font-medium ${over ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'}`}>
+      {over ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
+
 function DetailPanel({ detail }: { detail: EvaluationDetail }) {
+  const hybridWins = detail.hybridMape < detail.baselineMape;
+  const improvement = ((detail.baselineMape - detail.hybridMape) / detail.baselineMape * 100);
+
   return (
     <div className="space-y-6">
+      {/* Summary headline */}
+      <div className={`rounded-lg border px-5 py-4 flex items-center gap-4 ${hybridWins ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' : 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20'}`}>
+        <span className={`text-2xl font-bold ${hybridWins ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+          {hybridWins ? '▲' : '▼'}
+        </span>
+        <div>
+          <p className="font-semibold text-foreground">
+            {hybridWins
+              ? `Hybrid is ${improvement.toFixed(1)}% more accurate (MAPE: ${detail.baselineMape.toFixed(1)}% → ${detail.hybridMape.toFixed(1)}%)`
+              : `COCOMO baseline is more accurate (MAPE: ${detail.baselineMape.toFixed(1)}% vs ${detail.hybridMape.toFixed(1)}%)`}
+          </p>
+          <p className="text-sm text-muted-foreground">{detail.sampleSize} projects evaluated</p>
+        </div>
+      </div>
+
+      {/* Aggregate metrics table */}
       <div className="rounded-lg border border-border overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metric</th>
-              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Baseline</th>
-              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hybrid</th>
+              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">COCOMO Baseline</th>
+              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hybrid (LLM)</th>
+              <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Δ</th>
             </tr>
           </thead>
           <tbody>
             {[
-              { label: 'MAE (person-months)', b: detail.baselineMae, h: detail.hybridMae },
-              { label: 'RMSE (person-months)', b: detail.baselineRmse, h: detail.hybridRmse },
+              { label: 'MAE (PM)', b: detail.baselineMae, h: detail.hybridMae },
+              { label: 'RMSE (PM)', b: detail.baselineRmse, h: detail.hybridRmse },
               { label: 'MAPE (%)', b: detail.baselineMape, h: detail.hybridMape },
-            ].map(({ label, b, h }) => (
-              <tr key={label} className="border-t border-border">
-                <td className="px-4 py-3 text-muted-foreground">{label}</td>
-                <td className="px-4 py-3"><MetricCell value={b} compareValue={h} /></td>
-                <td className="px-4 py-3"><MetricCell value={h} compareValue={b} /></td>
-              </tr>
-            ))}
+            ].map(({ label, b, h }) => {
+              const delta = h - b;
+              const improved = delta < 0;
+              return (
+                <tr key={label} className="border-t border-border">
+                  <td className="px-4 py-3 text-muted-foreground">{label}</td>
+                  <td className="px-4 py-3"><MetricCell value={b} compareValue={h} /></td>
+                  <td className="px-4 py-3"><MetricCell value={h} compareValue={b} /></td>
+                  <td className={`px-4 py-3 text-sm font-medium ${improved ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {delta > 0 ? '+' : ''}{delta.toFixed(2)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
+      {/* Per-project breakdown */}
       {detail.perProjectRows.length > 0 && (
         <div className="rounded-lg border border-border overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Project</th>
-                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actual</th>
-                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Baseline</th>
-                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hybrid</th>
-                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Baseline Err</th>
-                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hybrid Err</th>
+                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">Actual</th>
+                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">COCOMO</th>
+                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">COCOMO%</th>
+                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">Hybrid</th>
+                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">Hybrid%</th>
+                <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Winner</th>
               </tr>
             </thead>
             <tbody>
-              {detail.perProjectRows.map((row) => (
-                <tr key={row.projectId} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium text-foreground">{row.projectName}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.actualEffortPm.toFixed(1)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.baselineEffortPm.toFixed(1)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.hybridEffortPm.toFixed(1)}</td>
-                  <td className="px-4 py-3">
-                    <MetricCell value={row.baselineAbsoluteError} compareValue={row.hybridAbsoluteError} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <MetricCell value={row.hybridAbsoluteError} compareValue={row.baselineAbsoluteError} />
-                  </td>
-                </tr>
-              ))}
+              {detail.perProjectRows.map((row) => {
+                const basePct = (row.baselineAbsoluteError / row.actualEffortPm) * 100;
+                const hybPct  = (row.hybridAbsoluteError  / row.actualEffortPm) * 100;
+                const hybridWinsRow = hybPct < basePct;
+                return (
+                  <tr key={row.projectId} className="border-t border-border">
+                    <td className="px-4 py-3 font-medium text-foreground max-w-[200px] truncate">{row.projectName}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{row.actualEffortPm.toFixed(0)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{row.baselineEffortPm.toFixed(1)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <DirectionBadge predicted={row.baselineEffortPm} actual={row.actualEffortPm} />
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{row.hybridEffortPm.toFixed(1)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <DirectionBadge predicted={row.hybridEffortPm} actual={row.actualEffortPm} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${hybridWinsRow ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'}`}>
+                        {hybridWinsRow ? 'Hybrid' : 'COCOMO'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -222,11 +271,28 @@ export default function EvaluationPage() {
             <form onSubmit={handleRunEvaluation} className="space-y-4">
               <input
                 type="text"
-                placeholder="Run name (e.g. Experiment 1)"
+                placeholder="Run name (e.g. Phase 17 — 21 projects)"
                 value={runName}
                 onChange={(e) => setRunName(e.target.value)}
                 className="w-full max-w-sm rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
               />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set(projects.map((p) => p.id)))}
+                  className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
+                >
+                  Select all ({projects.length})
+                </button>
+                <span className="text-muted-foreground text-xs">·</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-xs text-muted-foreground underline hover:text-foreground transition-colors"
+                >
+                  Deselect all
+                </button>
+              </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {projects.map((p) => (
                   <label
