@@ -14,6 +14,11 @@ export const llmOutputSchema = z.object({
   requirement_stability:    entrySchema,
   uncertainty:              entrySchema,
 
+  // Additional adjustment signals — higher = more effort
+  reliability_requirement:  entrySchema,
+  platform_complexity:      entrySchema,
+  schedule_pressure:        entrySchema,
+
   // Scale factor signals — map to COCOMO II SF values that determine exponent B
   // Higher level = more favorable condition = lower SF value = lower B
   precedentedness:          entrySchema,

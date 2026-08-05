@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 const SYSTEM_PROMPT = `You are a software engineering expert specializing in COCOMO II cost estimation.
-Analyze the project description and output exactly ten signal assessments as JSON.
+Analyze the project description and output exactly thirteen signal assessments as JSON.
 Return ONLY valid JSON — no markdown, no explanation, no text outside the JSON object.
 If a dimension is not mentioned in the description, default to "medium".
 
@@ -45,6 +45,27 @@ uncertainty — overall uncertainty in scope, technology choices, or team capabi
   medium    = some unknowns in one area
   high      = significant unknowns in technology or domain
   very_high = R&D-style, experimental technology, unclear feasibility
+
+reliability_requirement — consequence of software failure; how critical correctness is
+  very_low  = inconvenience only (toy app, internal demo)
+  low       = easily recoverable failure (internal reporting tool)
+  medium    = moderate loss (typical business app, recoverable with data fix)
+  high      = financial loss or significant business disruption (banking transaction, e-commerce)
+  very_high = risk to human life or safety-critical certification (medical device, avionics, autonomous vehicle)
+
+platform_complexity — complexity of the target runtime environment and infrastructure
+  very_low  = single desktop or simple cloud function, no concurrency concerns
+  low       = standard web server, basic cloud deployment
+  medium    = multi-tier cloud deployment, some real-time or concurrency requirements
+  high      = high-performance real-time processing, specialized hardware, complex OS interactions
+  very_high = embedded real-time OS, FPGA/ASIC, satellite/aerospace hardware, hard timing constraints
+
+schedule_pressure — degree of time constraint imposed on the project
+  very_low  = fully flexible, no external deadline, exploratory timeline
+  low       = comfortable schedule, minor buffer
+  medium    = typical agile project with normal sprint pressure
+  high      = compressed timeline, significant pressure to deliver early
+  very_high = extreme crunch, mandatory deadline with no flexibility (regulatory, market window, contractual penalty)
 
 ════════════════════════════════════════
 PART 2 — COCOMO II SCALE FACTOR SIGNALS
@@ -102,6 +123,9 @@ Stable HR policy, fully defined requirements. Small team that has built similar 
   "external_integrations":   { "level": "low",      "rationale": "SAML and email are well-understood integrations." },
   "requirement_stability":   { "level": "very_low", "rationale": "HR policy is fixed; requirements will not change." },
   "uncertainty":             { "level": "very_low", "rationale": "Well-understood domain with prior team experience." },
+  "reliability_requirement": { "level": "low",      "rationale": "Internal tool; failure causes minor inconvenience, no financial or safety risk." },
+  "platform_complexity":     { "level": "low",      "rationale": "Standard web server deployment, no real-time or hardware constraints." },
+  "schedule_pressure":       { "level": "low",      "rationale": "Internal tool with no hard deadline mentioned." },
   "precedentedness":         { "level": "high",     "rationale": "Team has built similar internal tools before." },
   "development_flexibility": { "level": "high",     "rationale": "Internal tool, no regulatory constraints." },
   "architecture_risk":       { "level": "high",     "rationale": "Standard architecture, no novel decisions required." },
@@ -118,6 +142,9 @@ fleet coordination protocol, safety interlocks certified to ISO 3691-4."
   "external_integrations":   { "level": "high",      "rationale": "Fleet coordination protocol and sensor hardware interfaces." },
   "requirement_stability":   { "level": "very_low",  "rationale": "ISO 3691-4 certification freezes requirements with zero tolerance for scope change." },
   "uncertainty":             { "level": "high",      "rationale": "SLAM in real warehouse environments carries significant technical risk." },
+  "reliability_requirement": { "level": "very_high", "rationale": "ISO 3691-4 safety certification — failures risk human injury in warehouse operations." },
+  "platform_complexity":     { "level": "very_high", "rationale": "Embedded real-time OS with hard timing constraints and sensor hardware." },
+  "schedule_pressure":       { "level": "medium",    "rationale": "Schedule pressure not mentioned; assuming typical." },
   "precedentedness":         { "level": "very_low",  "rationale": "Autonomous mobile robot navigation is a novel domain for most teams." },
   "development_flexibility": { "level": "very_low",  "rationale": "ISO safety certification imposes strict process and specification constraints." },
   "architecture_risk":       { "level": "low",       "rationale": "Some architectural questions remain open around SLAM algorithms and fleet protocols." },
