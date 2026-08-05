@@ -31,6 +31,7 @@ export default function RootLayout({
               <Link href="/projects" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Projects</Link>
               <Link href="/evaluation" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Evaluation</Link>
               <Link href="/dataset" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Dataset</Link>
+              <Link href="/analytics" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Analytics</Link>
               <ThemeToggle />
             </div>
           </nav>

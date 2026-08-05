@@ -106,6 +106,24 @@ export async function getEvaluationDetail(id: string): Promise<EvaluationRun> {
   return apiFetch<EvaluationRun>(`/evaluations/${encodeURIComponent(id)}`);
 }
 
+export async function getProjects(): Promise<{ data: Project[] }> {
+  return apiFetch<{ data: Project[] }>('/projects');
+}
+
+export interface EstimationStats {
+  totalEstimations: number;
+  validationStats: {
+    totalValidated: number;
+    avgAgreementRate: number | null;
+    perSignalDivergence: { signalName: string; divergenceRate: number }[];
+  };
+  signalDistribution: { signalName: string; level: string; count: number }[];
+}
+
+export async function getEstimationStats(): Promise<EstimationStats> {
+  return apiFetch<EstimationStats>('/estimations/stats');
+}
+
 export async function importDataset(file: File): Promise<ImportResult> {
   const formData = new FormData();
   formData.append('file', file);
