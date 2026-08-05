@@ -11,7 +11,7 @@ export default function HomePage() {
           <p className="text-lg text-muted-foreground">
             Hybrid software effort estimation combining{' '}
             <span className="text-foreground font-medium">COCOMO II</span> parametric
-            modelling with qualitative signals extracted by{' '}
+            modelling with <span className="text-foreground font-medium">13 qualitative signals</span> extracted by{' '}
             <span className="text-foreground font-medium">Claude</span>.
           </p>
         </div>
@@ -49,8 +49,8 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">How it works</p>
           <ol className="space-y-2 text-sm text-muted-foreground list-none">
             <li><span className="text-foreground font-medium">1.</span> Create a project with size, team, and a description.</li>
-            <li><span className="text-foreground font-medium">2.</span> Click Run Estimation — COCOMO II computes the baseline; Claude extracts five qualitative signals.</li>
-            <li><span className="text-foreground font-medium">3.</span> Each signal maps to an adjustment factor; the hybrid estimate is E_nom times the product of all factors.</li>
+            <li><span className="text-foreground font-medium">2.</span> Click Run Estimation — COCOMO II computes the baseline; Claude extracts 13 qualitative signals across complexity, reliability, platform, and COCOMO II scale factors.</li>
+            <li><span className="text-foreground font-medium">3.</span> Each signal maps to an adjustment factor; the hybrid estimate is E_nom × dynamic B exponent × product of all signal factors.</li>
             <li><span className="text-foreground font-medium">4.</span> On the Evaluation page, select projects with known actual effort to compute MAE, RMSE, and MAPE for both models.</li>
           </ol>
         </div>

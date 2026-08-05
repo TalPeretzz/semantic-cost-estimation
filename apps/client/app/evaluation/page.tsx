@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   getEvaluations,
   runEvaluation,
+  runEstimation,
   getEvaluationDetail,
   apiFetch,
   ApiError,
@@ -180,6 +181,8 @@ export default function EvaluationPage() {
   const [running, setRunning] = useState(false);
   const [runName, setRunName] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [rerunFirst, setRerunFirst] = useState(true);
+  const [rerunProgress, setRerunProgress] = useState<{ done: number; total: number } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const loadPage = useCallback(async () => {
@@ -215,8 +218,19 @@ export default function EvaluationPage() {
     if (!runName.trim()) { setFormError('Run name is required'); return; }
     if (selectedIds.size < 2) { setFormError('Select at least 2 projects'); return; }
     setRunning(true);
+    setRerunProgress(null);
     try {
-      const result = await runEvaluation(runName.trim(), Array.from(selectedIds)) as EvaluationDetail;
+      const ids = Array.from(selectedIds);
+
+      if (rerunFirst) {
+        setRerunProgress({ done: 0, total: ids.length });
+        for (let i = 0; i < ids.length; i++) {
+          await runEstimation(ids[i]);
+          setRerunProgress({ done: i + 1, total: ids.length });
+        }
+      }
+
+      const result = await runEvaluation(runName.trim(), ids) as EvaluationDetail;
       setRuns((prev) => [result, ...prev]);
       setSelectedDetail(result);
       setRunName('');
@@ -225,6 +239,7 @@ export default function EvaluationPage() {
       setFormError(err instanceof ApiError ? err.message : 'Evaluation failed. Please try again.');
     } finally {
       setRunning(false);
+      setRerunProgress(null);
     }
   }
 
@@ -318,13 +333,47 @@ export default function EvaluationPage() {
                   </label>
                 ))}
               </div>
+              {/* Re-run toggle */}
+              <label className="flex items-center gap-2.5 cursor-pointer w-fit">
+                <input
+                  type="checkbox"
+                  checked={rerunFirst}
+                  onChange={(e) => setRerunFirst(e.target.checked)}
+                  className="accent-accent"
+                  disabled={running}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Re-run fresh estimations before evaluating
+                  <span className="ml-1 text-xs text-muted-foreground/60">(uses latest prompt)</span>
+                </span>
+              </label>
+
+              {/* Progress bar */}
+              {rerunProgress && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    Running estimations… {rerunProgress.done}/{rerunProgress.total}
+                  </p>
+                  <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-accent transition-all duration-300"
+                      style={{ width: `${(rerunProgress.done / rerunProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {formError && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{formError}</p>}
               <button
                 type="submit"
                 disabled={running}
                 className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {running ? 'Running...' : `Run Evaluation (${selectedIds.size} projects)`}
+                {running
+                  ? rerunProgress
+                    ? `Estimating ${rerunProgress.done}/${rerunProgress.total}…`
+                    : 'Evaluating…'
+                  : `Run Evaluation (${selectedIds.size} projects)`}
               </button>
             </form>
           )}
