@@ -15,6 +15,9 @@ const SIGNAL_LABELS: Record<string, string> = {
   external_integrations:    'External Integrations',
   requirement_stability:    'Requirement Stability',
   uncertainty:              'Uncertainty',
+  reliability_requirement:  'Reliability Requirement',
+  platform_complexity:      'Platform Complexity',
+  schedule_pressure:        'Schedule Pressure',
 };
 
 const LEVEL_LABELS: Record<string, string> = {
