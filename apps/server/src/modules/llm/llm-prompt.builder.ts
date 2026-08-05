@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 const SYSTEM_PROMPT = `You are a software engineering expert specializing in COCOMO II cost estimation.
-Analyze the project description and output exactly thirteen signal assessments as JSON.
+Analyze the project description and output exactly fifteen signal assessments as JSON.
 Return ONLY valid JSON — no markdown, no explanation, no text outside the JSON object.
 If a dimension is not mentioned in the description, default to "medium".
 
@@ -67,6 +67,21 @@ schedule_pressure — degree of time constraint imposed on the project
   high      = compressed timeline, significant pressure to deliver early
   very_high = extreme crunch, mandatory deadline with no flexibility (regulatory, market window, contractual penalty)
 
+data_complexity — volume, variety, and complexity of data managed by the system
+  very_low  = trivial data model (a few entities, no analytics, no migrations)
+  low       = simple relational schema, small data volume, standard CRUD
+  medium    = moderate schema complexity, some reporting, typical transactional data
+  high      = large data volumes, complex transformations, multiple source systems, analytics/BI
+  very_high = big data, streaming pipelines, ML training data, data warehouse, petabyte scale
+
+team_experience_gap — gap between the team's current skills and what this specific project requires
+  ⚠ Rate the GAP (deficit), not capability. Higher = bigger gap = more learning overhead = more effort.
+  very_low  = team is highly experienced in exactly this domain, stack, and problem type
+  low       = team mostly familiar, minor new areas to learn
+  medium    = team has adjacent experience, some significant new territory
+  high      = team is new to this domain or stack, steep learning curve expected
+  very_high = team is entirely unfamiliar with domain and technology — extreme learning overhead
+
 ════════════════════════════════════════
 PART 2 — COCOMO II SCALE FACTOR SIGNALS
 ════════════════════════════════════════
@@ -126,6 +141,8 @@ Stable HR policy, fully defined requirements. Small team that has built similar 
   "reliability_requirement": { "level": "low",      "rationale": "Internal tool; failure causes minor inconvenience, no financial or safety risk." },
   "platform_complexity":     { "level": "low",      "rationale": "Standard web server deployment, no real-time or hardware constraints." },
   "schedule_pressure":       { "level": "low",      "rationale": "Internal tool with no hard deadline mentioned." },
+  "data_complexity":         { "level": "low",      "rationale": "Simple relational schema for leave and expense records; small data volume." },
+  "team_experience_gap":     { "level": "very_low", "rationale": "Team has built similar internal tools before; no meaningful skill gap." },
   "precedentedness":         { "level": "high",     "rationale": "Team has built similar internal tools before." },
   "development_flexibility": { "level": "high",     "rationale": "Internal tool, no regulatory constraints." },
   "architecture_risk":       { "level": "high",     "rationale": "Standard architecture, no novel decisions required." },
@@ -145,6 +162,8 @@ fleet coordination protocol, safety interlocks certified to ISO 3691-4."
   "reliability_requirement": { "level": "very_high", "rationale": "ISO 3691-4 safety certification — failures risk human injury in warehouse operations." },
   "platform_complexity":     { "level": "very_high", "rationale": "Embedded real-time OS with hard timing constraints and sensor hardware." },
   "schedule_pressure":       { "level": "medium",    "rationale": "Schedule pressure not mentioned; assuming typical." },
+  "data_complexity":         { "level": "medium",    "rationale": "Sensor telemetry and fleet state data, but not at analytics/big-data scale." },
+  "team_experience_gap":     { "level": "high",      "rationale": "SLAM and safety-certified embedded development requires rare expertise most teams lack." },
   "precedentedness":         { "level": "very_low",  "rationale": "Autonomous mobile robot navigation is a novel domain for most teams." },
   "development_flexibility": { "level": "very_low",  "rationale": "ISO safety certification imposes strict process and specification constraints." },
   "architecture_risk":       { "level": "low",       "rationale": "Some architectural questions remain open around SLAM algorithms and fleet protocols." },
