@@ -24,6 +24,9 @@ packages/*/src/**/*.d.ts.map
 npm-debug.log*
 pnpm-debug.log*
 
+# Next.js auto-generated
+next-env.d.ts
+
 # TypeScript build info
 *.tsbuildinfo
 
