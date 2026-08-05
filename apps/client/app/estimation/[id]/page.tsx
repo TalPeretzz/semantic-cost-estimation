@@ -18,6 +18,8 @@ const SIGNAL_LABELS: Record<string, string> = {
   reliability_requirement:  'Reliability Requirement',
   platform_complexity:      'Platform Complexity',
   schedule_pressure:        'Schedule Pressure',
+  data_complexity:          'Data Complexity',
+  team_experience_gap:      'Team Experience Gap',
 };
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -264,13 +266,13 @@ function ScaleFactorTable({ assessments, dynamicB, nominalB }: {
 }
 
 const SYSTEM_PROMPT = `You are a software engineering expert specializing in COCOMO II cost estimation.
-Analyze the project description and output exactly thirteen signal assessments as JSON.
+Analyze the project description and output exactly fifteen signal assessments as JSON.
 Return ONLY valid JSON — no markdown, no explanation, no text outside the JSON object.
 If a dimension is not mentioned in the description, default to "medium".
 
 Rate functional_complexity, architectural_complexity, external_integrations, requirement_stability,
-uncertainty, reliability_requirement, platform_complexity, schedule_pressure as adjustment signals
-(higher = more effort).
+uncertainty, reliability_requirement, platform_complexity, schedule_pressure, data_complexity,
+team_experience_gap as adjustment signals (higher = more effort).
 
 Rate precedentedness, development_flexibility, architecture_risk, team_cohesion, process_maturity
 as scale factor signals (higher = more favorable = lower cost exponent B).`;
