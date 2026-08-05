@@ -28,6 +28,7 @@ export interface Estimation {
   nominalEffortPm: number | null;
   hybridEffortPm: number | null;
   actualEffortPm: number | null;
+  normalizedText: string | null;
   errorMessage: string | null;
   signals: Signal[];
   adjustmentResult: AdjustmentResult | null;
