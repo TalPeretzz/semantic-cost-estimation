@@ -94,6 +94,47 @@ export class EstimationService {
     return estimation;
   }
 
+  async getStats() {
+    const all = await this.estimationRepo.find({ where: { status: 'completed' } });
+    const validated = all.filter((e) => e.validationResult != null);
+
+    const avgAgreementRate =
+      validated.length > 0
+        ? validated.reduce(
+            (sum, e) => sum + ((e.validationResult as Record<string, number>).agreementRate ?? 0),
+            0,
+          ) / validated.length
+        : null;
+
+    const divergenceTotals: Record<string, number> = {};
+    const divergenceCounts: Record<string, number> = {};
+    for (const e of validated) {
+      const perSignal = (e.validationResult as Record<string, Record<string, { agreed: boolean }>>).perSignal ?? {};
+      for (const [name, cmp] of Object.entries(perSignal)) {
+        divergenceTotals[name] = (divergenceTotals[name] ?? 0) + 1;
+        if (!cmp.agreed) divergenceCounts[name] = (divergenceCounts[name] ?? 0) + 1;
+      }
+    }
+    const perSignalDivergence = Object.entries(divergenceTotals)
+      .map(([signalName, total]) => ({
+        signalName,
+        divergenceRate: (divergenceCounts[signalName] ?? 0) / total,
+      }))
+      .sort((a, b) => b.divergenceRate - a.divergenceRate);
+
+    const signalDistribution = await this.signalsService.getDistribution();
+
+    return {
+      totalEstimations: all.length,
+      validationStats: {
+        totalValidated: validated.length,
+        avgAgreementRate,
+        perSignalDivergence,
+      },
+      signalDistribution,
+    };
+  }
+
   async findOneWithDetail(id: string): Promise<EstimationDetail> {
     const estimation = await this.findOne(id);
     const [signals, project] = await Promise.all([

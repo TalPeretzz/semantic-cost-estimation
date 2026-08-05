@@ -19,6 +19,11 @@ export class EstimationController {
     return this.estimationService.findByProject(query.projectId);
   }
 
+  @Get('stats')
+  getStats() {
+    return this.estimationService.getStats();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.estimationService.findOneWithDetail(id);
