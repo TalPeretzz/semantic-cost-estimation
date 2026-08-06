@@ -148,6 +148,8 @@ export default function AnalyticsPage() {
   // ── History data ──────────────────────────────────────────────────────────
   const historyData = useMemo(() => {
     if (!selectedProjectId) return [];
+    const project = projects.find((p) => p.id === selectedProjectId);
+    const actualPm = project?.actualEffortPm ?? null;
     return allEstimations
       .filter((e) => e.projectId === selectedProjectId && e.status === 'completed' && e.nominalEffortPm)
       .sort((a, b) => new Date(a.runAt).getTime() - new Date(b.runAt).getTime())
@@ -156,8 +158,9 @@ export default function AnalyticsPage() {
         date: new Date(e.runAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         cocomo: Number(e.nominalEffortPm!.toFixed(1)),
         hybrid: Number((e.hybridEffortPm ?? e.nominalEffortPm)!.toFixed(1)),
+        ...(actualPm != null ? { actual: actualPm } : {}),
       }));
-  }, [selectedProjectId, allEstimations]);
+  }, [selectedProjectId, allEstimations, projects]);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
@@ -241,7 +244,7 @@ export default function AnalyticsPage() {
             </p>
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <ResponsiveContainer width="100%" height={380}>
-                <ScatterChart margin={{ top: 16, right: 24, left: 0, bottom: 24 }}>
+                <ScatterChart margin={{ top: 16, right: 24, left: 0, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis type="number" dataKey="actual" domain={[0, scatterMax]} name="Actual" unit=" PM" tick={{ fontSize: 11 }}>
                     <Label value="Actual Effort (PM)" position="insideBottom" offset={-16} style={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
@@ -258,8 +261,8 @@ export default function AnalyticsPage() {
                   />
                   <Tooltip content={<ScatterTooltip />} />
                   <Legend />
-                  <Scatter name="COCOMO Baseline" data={cocomoPoints} fill="#3b82f6" opacity={0.85} />
-                  <Scatter name="Hybrid (LLM)"    data={hybridPoints}  fill="#22c55e" opacity={0.85} />
+                  <Scatter name="COCOMO Baseline" data={cocomoPoints} fill="#3b82f6" opacity={0.85} legendType="square" />
+                  <Scatter name="Hybrid (LLM)"    data={hybridPoints}  fill="#22c55e" opacity={0.85} legendType="square" />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
@@ -298,16 +301,9 @@ export default function AnalyticsPage() {
                   <YAxis tick={{ fontSize: 11 }} unit=" PM" />
                   <Tooltip content={<HistoryTooltip />} />
                   <Legend />
-                  {selectedProject?.actualEffortPm && (
-                    <ReferenceLine
-                      y={selectedProject.actualEffortPm}
-                      stroke="#eab308"
-                      strokeDasharray="5 3"
-                      label={{ value: `Actual: ${selectedProject.actualEffortPm} PM`, position: 'right', fontSize: 10, fill: '#eab308' }}
-                    />
-                  )}
-                  <Line type="monotone" dataKey="cocomo" name="COCOMO Baseline" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="hybrid" name="Hybrid (LLM)"    stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="cocomo"  name="COCOMO Baseline" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="hybrid"  name="Hybrid (LLM)"    stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="actual"  name="Actual Effort"   stroke="#eab308" strokeWidth={2} strokeDasharray="5 3" dot={false} connectNulls={false} />
                 </LineChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground mt-2 px-1">
