@@ -246,11 +246,11 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height={380}>
                 <ScatterChart margin={{ top: 16, right: 24, left: 0, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis type="number" dataKey="actual" domain={[0, scatterMax]} name="Actual" unit=" PM" tick={{ fontSize: 11 }}>
-                    <Label value="Actual Effort (PM)" position="insideBottom" offset={-16} style={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                  <XAxis type="number" dataKey="actual" domain={[0, scatterMax]} name="Actual" tick={{ fontSize: 11 }}>
+                    <Label value="Actual Effort (person-months)" position="insideBottom" offset={-20} style={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
                   </XAxis>
-                  <YAxis type="number" dataKey="predicted" domain={[0, scatterMax]} name="Predicted" unit=" PM" tick={{ fontSize: 11 }}>
-                    <Label value="Predicted (PM)" angle={-90} position="insideLeft" offset={16} style={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                  <YAxis type="number" dataKey="predicted" domain={[0, scatterMax]} name="Predicted" tick={{ fontSize: 11 }}>
+                    <Label value="Predicted (person-months)" angle={-90} position="insideLeft" offset={16} style={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
                   </YAxis>
                   {/* Perfect prediction diagonal */}
                   <ReferenceLine
@@ -260,7 +260,15 @@ export default function AnalyticsPage() {
                     strokeWidth={1}
                   />
                   <Tooltip content={<ScatterTooltip />} />
-                  <Legend />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconSize={12}
+                    wrapperStyle={{ paddingBottom: 8 }}
+                    formatter={(value) => (
+                      <span style={{ fontSize: 12, color: 'var(--foreground)', marginRight: 16 }}>{value}</span>
+                    )}
+                  />
                   <Scatter name="COCOMO Baseline" data={cocomoPoints} fill="#3b82f6" opacity={0.85} legendType="square" />
                   <Scatter name="Hybrid (LLM)"    data={hybridPoints}  fill="#22c55e" opacity={0.85} legendType="square" />
                 </ScatterChart>
