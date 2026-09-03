@@ -84,6 +84,10 @@ export async function getEstimationsByProject(
   );
 }
 
+export async function getAllEstimations(): Promise<Estimation[]> {
+  return apiFetch<Estimation[]>('/estimations');
+}
+
 export async function getEstimationDetail(id: string): Promise<Estimation> {
   return apiFetch<Estimation>(`/estimations/${encodeURIComponent(id)}`);
 }
