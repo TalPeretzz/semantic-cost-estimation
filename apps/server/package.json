@@ -6,6 +6,9 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start:prod": "node dist/main",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts"

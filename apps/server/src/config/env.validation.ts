@@ -35,6 +35,12 @@ export class AppConfig {
 
   @IsString()
   ANTHROPIC_API_KEY!: string;
+
+  // GptValidationService resolves this in its constructor, so a missing key
+  // fails provider instantiation at boot. Validating it here turns that into a
+  // readable startup error instead of a dependency-injection stack trace.
+  @IsString()
+  OPENAI_API_KEY!: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): AppConfig {

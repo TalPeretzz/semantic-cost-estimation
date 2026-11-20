@@ -1,45 +1,52 @@
 # Semantic Cost Estimation
 
-Hybrid software effort estimation combining **COCOMO II Intermediate** parametric modelling with **LLM-extracted qualitative signals** via the Claude API.
+Hybrid software effort estimation combining the **COCOMO II Post-Architecture** parametric model with **LLM-extracted qualitative signals**.
 
-Master's thesis research tool — evaluates whether semantic signals improve estimation accuracy over the COCOMO II baseline (MAE / RMSE / MAPE).
+Master's thesis research tool. Claude reads a natural-language project description and rates fifteen qualitative signals; those ratings drive the COCOMO II exponent and effort multipliers, and the arithmetic stays deterministic and inspectable. GPT-4o-mini re-rates the same description as an independent cross-model check. Accuracy against the baseline is reported as MAE / RMSE / MAPE.
 
 ---
 
 ## Architecture
 
 ```
-Browser (Next.js 14)
-  │ HTTP/JSON REST
+Browser (Next.js 14, port 3000)
+  │ HTTP/JSON REST  →  /api/v1
   ▼
 NestJS API (port 3001)
   ├─ ProjectsModule     — CRUD for software projects
   ├─ EstimationModule   — COCOMO II + LLM pipeline orchestration
-  ├─ LlmModule          — Claude API (only module that touches the SDK)
-  ├─ SignalsModule       — persist 5 qualitative signals per estimation
-  ├─ AdjustmentModule   — compute E_final = E_nom × ∏ A_i
+  ├─ LlmModule          — Claude (signal extraction) and GPT-4o-mini (cross-model check)
+  ├─ SignalsModule      — persist the 15 signal ratings and rationales per estimation
+  ├─ AdjustmentModule   — compute B from the scale factors and E_final = E_nom × ∏ A_i
   ├─ EvaluationModule   — MAE / RMSE / MAPE for baseline vs hybrid
-  └─ DatasetModule      — bulk CSV import of historical projects
+  ├─ DatasetModule      — bulk CSV import of project records
+  └─ HealthModule       — liveness probe
   │ TCP 5434
   ▼
 PostgreSQL 16
-  │ HTTPS
-  ▼ (LlmModule only)
-Anthropic Claude API
+  │ HTTPS  (LlmModule only)
+  ├─▶ Anthropic Claude API
+  └─▶ OpenAI API (gpt-4o-mini)
 ```
 
 ---
 
-## Prerequisites
+## Running it end to end
 
-- Node.js ≥ 20
-- pnpm ≥ 9
-- Docker & Docker Compose
-- An [Anthropic API key](https://console.anthropic.com/)
+Everything below is a fresh clone to a working estimate. It takes about five minutes, most of it `pnpm install`.
 
----
+### Prerequisites
 
-## Getting started
+| Tool | Version | Check with |
+|------|---------|------------|
+| Node.js | ≥ 20 | `node -v` |
+| pnpm | ≥ 9 | `pnpm -v` — install via `npm i -g pnpm` |
+| Docker + Compose | any current | `docker compose version` |
+| Anthropic API key | — | [console.anthropic.com](https://console.anthropic.com/) |
+| OpenAI API key | — | [platform.openai.com](https://platform.openai.com/api-keys) |
+
+Both API keys are **required**. The server resolves them while constructing its
+providers, so it will refuse to start if either is missing.
 
 ### 1 — Clone and install
 
@@ -49,73 +56,107 @@ cd semantic-cost-estimation
 pnpm install
 ```
 
-### 2 — Environment variables
+### 2 — Configure the server
 
 ```bash
 cp .env.example apps/server/.env
 ```
 
-Edit `apps/server/.env` and fill in your values:
+Open `apps/server/.env` and paste in your two API keys. The PostgreSQL values
+already match `docker-compose.yml`, so leave them alone unless you change the
+compose file too.
 
-```env
-# PostgreSQL
-POSTGRES_USER=sce
-POSTGRES_PASSWORD=sce_secret
-POSTGRES_DB=sce_dev
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5434
+### 3 — Configure the client
 
-# Server
-SERVER_PORT=3001
-NODE_ENV=development
-
-# Anthropic — required for LLM signal extraction
-ANTHROPIC_API_KEY=sk-ant-...
+```bash
+cp apps/client/.env.example apps/client/.env.local
 ```
 
-### 3 — Start PostgreSQL
+One variable, `NEXT_PUBLIC_API_URL`, and the default is correct for local work.
+Skip this step only if you are happy with that default — the client falls back
+to the same value in code.
+
+### 4 — Start PostgreSQL
 
 ```bash
 docker compose up -d postgres
 ```
 
-### 4 — Build shared packages
+Port **5434** on the host, not 5432, so it will not collide with a PostgreSQL
+you already run. Confirm it is up:
+
+```bash
+docker compose ps
+```
+
+### 5 — Build the shared packages
+
+The server and client both import `@sce/types` and `@sce/constants` from `dist/`,
+so these must be built once before anything else will compile:
 
 ```bash
 pnpm --filter @sce/types build
 pnpm --filter @sce/constants build
 ```
 
-### 5 — Start both apps
+### 6 — Start both apps
 
 ```bash
 pnpm dev
 ```
+
+This runs the API and the client together. Tables are created automatically on
+first boot via TypeORM synchronise.
 
 | Service | URL |
 |---------|-----|
 | Next.js client | http://localhost:3000 |
 | NestJS API | http://localhost:3001/api/v1 |
 | Swagger docs | http://localhost:3001/api/v1/docs |
+| Health probe | http://localhost:3001/api/v1/health |
 | pgAdmin | http://localhost:5050 (after `docker compose up -d pgadmin`) |
 
----
-
-## Seed data
-
-Insert 20 historical projects with known actual effort for thesis evaluation:
+### 7 — Load the evaluation scenarios
 
 ```bash
 pnpm --filter server seed
 ```
 
-Then run estimations on all seeded projects and use the **Evaluation Dashboard** (`/evaluation`) to compute MAE / RMSE / MAPE for baseline vs hybrid.
+Inserts 20 constructed project scenarios, each with a description, a size in
+KLOC, and an assigned reference effort value used as the comparison target. The
+script is idempotent — rerunning it skips scenarios already present.
+
+### 8 — Run an estimation
+
+Open http://localhost:3000/projects, pick a scenario, and press **Run
+Estimation**. A run takes roughly 20 seconds; most of it is the two LLM calls.
+The result screen shows the baseline, the hybrid estimate, the error against the
+reference value, every signal with the model's stated reason for it, and the
+full formula trace.
+
+From there:
+
+- **`/analytics`** — predicted vs actual across all runs, per-project run
+  history, signal level distribution, and cross-model divergence per signal.
+- **`/evaluation`** — MAE / RMSE / MAPE for baseline vs hybrid over every
+  scenario with a reference value.
+- **`/dataset`** — bulk CSV import.
+
+### If something does not work
+
+| Symptom | Cause |
+|---------|-------|
+| Server exits with `Environment validation failed` | A variable is missing from `apps/server/.env` — the message names it |
+| Every page shows a fetch error | The API is not running, or `NEXT_PUBLIC_API_URL` lacks the `/api/v1` suffix |
+| `Cannot find module '@sce/types'` | Step 5 was skipped, or a package changed and needs rebuilding |
+| `ECONNREFUSED ... 5434` | The postgres container is not up — `docker compose up -d postgres` |
+| Estimation starts but no cross-model check appears | The OpenAI call failed; the run still completes. Check the server log for `GPT validation failed` |
 
 ---
 
-## CSV Import format
+## CSV import format
 
-Upload historical projects via `/dataset` or `POST /api/v1/datasets/import`:
+Upload project records via `/dataset` or `POST /api/v1/datasets/import`:
 
 ```csv
 name,description,domain,size_kloc,team_size,experience_level,actual_effort_pm
@@ -131,51 +172,86 @@ Project B,An analytics pipeline.,semi-detached,30,10,high,
 | `size_kloc` | yes | positive number |
 | `team_size` | yes | integer 1–500 |
 | `experience_level` | yes | `very_low` \| `low` \| `nominal` \| `high` \| `very_high` |
-| `actual_effort_pm` | no | positive number — required for evaluation |
+| `actual_effort_pm` | no | positive number — required for a record to count in the evaluation |
 
 ---
 
 ## Running tests
 
 ```bash
-# Server unit tests with coverage (must be >= 80%)
+# Server unit tests
+pnpm --filter server test
+
+# With coverage — thresholds are enforced at 80% across the board
 pnpm --filter server test:cov
 
-# TypeScript check across all workspaces
+# TypeScript check across every workspace
 pnpm typecheck
 ```
 
----
-
-## COCOMO II formula
-
-```
-B      = 0.91 + 0.01 x sum(SF_i)     (nominal scale factors)
-E_nom  = 2.94 x KLOC^B x EAF
-
-Signal ordinal -> A_i factor:
-  very_low  -> -3 -> 0.70
-  low       -> -1 -> 0.90
-  medium    ->  0 -> 1.00
-  high      -> +1 -> 1.10
-  very_high -> +3 -> 1.30
-
-E_final = E_nom x A_functional x A_architectural x A_integrations x A_stability x A_uncertainty
-```
+Tests need `@sce/types` and `@sce/constants` built (step 5) — Jest maps those
+imports straight to `dist/`.
 
 ---
 
-## Environment variables reference
+## The estimation model
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | **Required.** Claude API key |
-| `POSTGRES_HOST` | — | PostgreSQL host |
-| `POSTGRES_PORT` | `5434` | PostgreSQL port |
-| `POSTGRES_USER` | — | PostgreSQL username |
-| `POSTGRES_PASSWORD` | — | PostgreSQL password |
-| `POSTGRES_DB` | — | PostgreSQL database name |
-| `SERVER_PORT` | `3001` | NestJS listen port |
-| `NODE_ENV` | `development` | `development` \| `production` \| `test` |
-| `CORS_ORIGIN` | `http://localhost:3000` | Allowed CORS origin |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3000` | Client API base URL |
+```
+Scale factors (5, LLM-rated) → exponent
+  B = 0.91 + 0.01 × Σ SF_i
+  SF_i ∈ { PREC, FLEX, RESL, TEAM, PMAT }        B ranges 0.91…1.23
+
+Nominal effort
+  E_nom = 2.94 × KLOC^B × EAF
+
+Effort multipliers (10, LLM-rated) → adjustment
+  ordinal: very_low −3 | low −1 | medium 0 | high +1 | very_high +3
+  A_i = 1 + (ordinal × 0.1)
+     →  0.70 | 0.90 | 1.00 | 1.10 | 1.30
+
+  A_i ∈ { functional_complexity, architectural_complexity, external_integrations,
+          requirement_stability, uncertainty, reliability_requirement,
+          platform_complexity, schedule_pressure, data_complexity,
+          team_experience_gap }
+
+Final estimate
+  E_final = E_nom × ∏ A_i
+```
+
+Every rating carries the model's written rationale, and the result screen prints
+the whole trace, so an estimate can be read back line by line.
+
+---
+
+## Environment variables
+
+### Server — `apps/server/.env`
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ANTHROPIC_API_KEY` | yes | — | Claude API key — extracts the signals |
+| `OPENAI_API_KEY` | yes | — | OpenAI API key — gpt-4o-mini cross-model check |
+| `POSTGRES_HOST` | yes | — | PostgreSQL host |
+| `POSTGRES_PORT` | yes | — | PostgreSQL port (`5434` in the compose file) |
+| `POSTGRES_USER` | yes | — | PostgreSQL username |
+| `POSTGRES_PASSWORD` | yes | — | PostgreSQL password |
+| `POSTGRES_DB` | yes | — | PostgreSQL database name |
+| `SERVER_PORT` | no | `3001` | NestJS listen port |
+| `NODE_ENV` | no | `development` | `development` \| `production` \| `test` |
+| `CORS_ORIGIN` | no | `http://localhost:3000` in development, CORS disabled in production | Allowed CORS origin |
+
+Required variables are enforced at startup by `config/env.validation.ts`; a
+missing one names itself in the error.
+
+### Client — `apps/client/.env.local`
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | no | `http://localhost:3001/api/v1` | API base URL, including the `/api/v1` prefix |
+
+### pgAdmin — only for `docker compose up -d pgadmin`
+
+| Variable | Default |
+|----------|---------|
+| `PGADMIN_EMAIL` | `admin@sce.local` |
+| `PGADMIN_PASSWORD` | `admin` |

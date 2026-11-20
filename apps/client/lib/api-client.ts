@@ -19,8 +19,11 @@ export async function createProject(payload: CreateProjectPayload): Promise<Proj
   });
 }
 
+// Port 3001 with the /api/v1 prefix — the server's default. The old fallback
+// was port 3000, which is the client itself, so a checkout without an
+// .env.local silently sent every request back to Next.js and 404'd.
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 export class ApiError extends Error {
   constructor(
@@ -131,7 +134,8 @@ export async function getEstimationStats(): Promise<EstimationStats> {
 export async function importDataset(file: File): Promise<ImportResult> {
   const formData = new FormData();
   formData.append('file', file);
-  const url = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/datasets/import`;
+  // Not apiFetch: multipart upload must not carry a JSON Content-Type header.
+  const url = `${API_BASE}/datasets/import`;
   const response = await fetch(url, { method: 'POST', body: formData });
   if (!response.ok) {
     let message = `Request failed: ${response.status} ${response.statusText}`;
