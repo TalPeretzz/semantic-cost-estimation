@@ -116,7 +116,26 @@ first boot via TypeORM synchronise.
 | Health probe | http://localhost:3001/api/v1/health |
 | pgAdmin | http://localhost:5050 (after `docker compose up -d pgadmin`) |
 
-### 7 — Load the evaluation scenarios
+### 7 — Load the data
+
+Two ways in, depending on what you want.
+
+**The recorded research data** — every estimation behind the thesis:
+
+```bash
+pnpm db:restore
+```
+
+Loads `db/snapshot.sql`: 22 project scenarios, 139 estimation runs, 1,061
+signal ratings and one evaluation run. The analytics and evaluation screens
+have something to show immediately, and the numbers reported in the thesis can
+be traced back to the rows that produced them. See
+[The committed snapshot](#the-committed-snapshot) for what is in it.
+
+The restore truncates the four tables first, so it is repeatable. It needs the
+tables to exist — start the API once (step 6) and TypeORM creates them.
+
+**A clean start** — scenarios only, no estimations:
 
 ```bash
 pnpm --filter server seed
@@ -124,7 +143,9 @@ pnpm --filter server seed
 
 Inserts 20 constructed project scenarios, each with a description, a size in
 KLOC, and an assigned reference effort value used as the comparison target. The
-script is idempotent — rerunning it skips scenarios already present.
+script is idempotent — rerunning it skips scenarios already present. Choose
+this if you want to generate your own runs; the analytics screens stay empty
+until you do.
 
 ### 8 — Run an estimation
 
@@ -150,6 +171,7 @@ From there:
 | Every page shows a fetch error | The API is not running, or `NEXT_PUBLIC_API_URL` lacks the `/api/v1` suffix |
 | `Cannot find module '@sce/types'` | Step 5 was skipped, or a package changed and needs rebuilding |
 | `ECONNREFUSED ... 5434` | The postgres container is not up — `docker compose up -d postgres` |
+| `pnpm db:restore` says the schema is not ready | The API has not booted yet, so TypeORM has not created the tables. Run step 6 once |
 | Estimation starts but no cross-model check appears | The OpenAI call failed; the run still completes. Check the server log for `GPT validation failed` |
 
 ---
@@ -173,6 +195,48 @@ Project B,An analytics pipeline.,semi-detached,30,10,high,
 | `team_size` | yes | integer 1–500 |
 | `experience_level` | yes | `very_low` \| `low` \| `nominal` \| `high` \| `very_high` |
 | `actual_effort_pm` | no | positive number — required for a record to count in the evaluation |
+
+---
+
+## The committed snapshot
+
+`db/snapshot.sql` is the project's actual working database, committed so the
+results are inspectable rather than merely described.
+
+| Table | Rows |
+|-------|------|
+| `projects` | 22 |
+| `estimations` | 139 — 137 completed, 1 failed, 1 interrupted mid-run |
+| `signals` | 1,061 |
+| `evaluation_runs` | 1 |
+
+Data only. The schema belongs to TypeORM's synchronise, so dumping it here
+would duplicate it and drift from the entities. Written with
+`--column-inserts`, so the restore does not depend on column order and each row
+is its own line in a diff.
+
+Worth knowing before you read it:
+
+- **These are all the runs, not a curated subset.** The framework changed over
+  the course of the research — prompts, the signal set, the calculation — so
+  the table spans several configurations and shows a wider spread than the
+  figures reported in the thesis, which come from one of them.
+- **22 projects, while `seed.ts` holds 20.** Two were added directly through
+  the UI and never made it back into the seed script: *Internal HR Leave
+  Management Portal* and *Predictive Maintenance Platform for Industrial IoT*,
+  the latter without a reference effort value.
+- **The scenarios are constructed, not observed.** Descriptions and reference
+  effort values were authored together, which carries a circularity risk — the
+  thesis states this directly in its limitations.
+- No credentials are stored. `normalizedText` holds the project description and
+  the `jsonb` columns hold computed values; LLM requests are rebuilt at render
+  time rather than persisted.
+
+To refresh it after generating new runs:
+
+```bash
+pnpm db:snapshot
+```
 
 ---
 
