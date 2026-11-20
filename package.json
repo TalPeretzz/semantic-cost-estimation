@@ -5,7 +5,9 @@
     "dev": "pnpm --filter @sce/types build && concurrently \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
     "build": "pnpm --filter @sce/types build && pnpm --filter server build && pnpm --filter client build",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "db:snapshot": "./scripts/db-snapshot.sh",
+    "db:restore": "./scripts/db-restore.sh"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
